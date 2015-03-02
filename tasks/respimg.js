@@ -10,7 +10,8 @@
  * Portions borrowed liberally from:
  *		<https://github.com/andismith/grunt-responsive-images>, and
  *		<https://github.com/dbushell/grunt-svg2png>, and
- *		<https://github.com/JamieMason/grunt-imageoptim>
+ *		<https://github.com/JamieMason/grunt-imageoptim>, and
+ *		<https://github.com/sindresorhus/grunt-svgmin>
  *
  * @author David Newton (http://twitter.com/newtron)
  * @version 0.0.0
@@ -26,6 +27,9 @@ module.exports = function(grunt) {
 		phantomjs =			require('phantomjs'),
 		q =					require('q'),
 		childProcess =		require('child_process'),
+		eachAsync =			require('each-async'),
+		prettyBytes =		require('pretty-bytes'),
+		SVGO =				require('svgo'),
 
 		cpExec =			childProcess.exec,
 		cpSpawn =			childProcess.spawn,
@@ -109,7 +113,7 @@ module.exports = function(grunt) {
 				deferred = q.defer(),
 				errorMessage = 'ImageOptim-CLI exited with a failure status';
 
-			imageOptimCli = spawn('./imageOptim', ['--quit'], {
+			imageOptimCli = cpSpawn('./imageOptim', ['--quit'], {
 				cwd: cliPath
 			});
 
@@ -495,7 +499,8 @@ module.exports = function(grunt) {
 			task =			this,
 			promise =		q(),
 			cliPath =		getPathToCli(),
-			outputFiles = 	[];
+			outputFiles = 	[],
+			svgo =			new SVGO(this.options());
 
 		// make sure valid sizes have been defined
 		if (!isValidArray(options.widths)) {
@@ -507,7 +512,38 @@ module.exports = function(grunt) {
 			throw grunt.fail.fatal('Unable to locate ImageOptim-CLI.');
 		}
 
-		// optimize inputs
+		// optimize SVG inputs
+		eachAsync(this.files, function (el, i, next) {
+			// bail if it’s not an SVG
+			var extName = path.extname(dstPath).toLowerCase();
+			if (extName !== '.svg') {
+				next();
+				return;
+			}
+
+			var	srcPath = el.src[0],
+				srcSvg = grunt.file.read(srcPath);
+
+			svgo.optimize(srcSvg, function (result) {
+				if (result.error) {
+					grunt.warn('Error parsing SVG:', result.error);
+					next();
+					return;
+				}
+
+				var saved = srcSvg.length - result.data.length;
+				var percentage = saved / srcSvg.length * 100;
+				totalSaved += saved;
+
+				grunt.log.writeln(srcPath + ' (saved ' + prettyBytes(saved) + ' ' + Math.round(percentage) + '%)');
+				grunt.file.write(el.dest, result.data);
+				next();
+			});
+		}, function () {
+			grunt.log.writeln('Total saved: ' + prettyBytes(totalSaved));
+		});
+
+		// optimize raster inputs
 		task.files.forEach(function(file) {
 			promise = processBatch('file', cliPath, options, file.src, promise);
 			promise = processBatch('dir', cliPath, options, file.src, promise);

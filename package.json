@@ -41,11 +41,9 @@
 
 	"dependencies" : {
 		"async" :					"~0.2.8",
-		"chalk" :					"^1.0.0",
 		"each-async" :				"^1.0.0",
 		"grunt" :					"^0.4.5",
 		"imageoptim-cli" :			">= 1.6.19",
-		"log-symbols" :				"^1.0.0",
 		"node-imagemagick" :		"~0.1.8",
 		"phantomjs" :				"~1.9.0",
 		"pretty-bytes" :			"^1.0.1",
