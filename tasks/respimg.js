@@ -42,11 +42,96 @@ module.exports = function(grunt) {
 		}),
 
 		DEFAULT_OPTIONS = {
-			quality :		100,	// value between 1 and 100
+			// options: Activate, Associate, Background, Copy, Deactivate, Disassociate, Extract, Off, On, Opaque, Remove, Set, Shape, Transparent
+			// no-optim default: Background
+			alpha :						null,
+
+			// options: an ImageMagick-compatible color (see http://www.imagemagick.org/script/color.php)
+			// no-optim default: Black
+			background :				null,
+
+			// options: CMY, CMYK, Gray, HCL, HCLp, HSB, HSI, HSL, HSV, HWB, Lab, LCHab, LCHuv, LMS, Log, Luv, OHTA, Rec601YCbCr, Rec709YCbCr, RGB, scRGB, sRGB, Transparent, xyY, XYZ, YCbCr, YCC, YDbDr, YIQ, YPbPr, YUV
+			// no-optim default: sRGB
+			colorspace :				null,
+
+			// options: FloydSteinberg, None, plus, Riemersma
+			dither :					'None',
+
+			// options: Bartlett, Bessel, Blackman, Bohman, Box, Catrom, Cosine, Cubic, Gaussian, Hamming, Hann, Hanning, Hermite, Jinc, Kaiser, Lagrange, Lanczos, Lanczos2, Lanczos2Sharp, LanczosRadius, LanczosSharp, Mitchell, none, Parzen, Point, Quadratic, Robidoux, RobidouxSharp, Sinc, SincFast, Spline, Triangle, Welch, Welsh
+			filter :					'Triangle',
+
+			// options: (float)
+			filterSupport :				2,
+
+			// options: GIF, JPEG, line, none, partition, plane, PNG
+			interlace :					'none',
+
+			// options: off, on
+			// no-optim default: off
+			jpegFancyUpsampling :		null,
+
+			// options for each: true, false
+			optimize :		{
+				svg:					true,
+				rasterInput:			true,
+				rasterOutput:			true
+			},
+
+			// options: (int) 0–9
+			// no-optim default: 5
+			pngCompressionFilter :		null,
+
+			// options: (int) 0–9
+			// no-optim default: 9
+			pngCompressionLevel :		null,
+
+			// options: (int) 0–9
+			// no-optim default: 1
+			pngCompressionStrategy :	null,
+
+			// options: “all” or the name of chunk(s) to be excluded (see http://www.imagemagick.org/script/command-line-options.php#define)
+			// no-optim default: all
+			pngExcludeChunk :			null,
+
+			// options: true, false
+			// note that “false” is equivalent to “null”; actually passing “false” behaves the same as passing “true”
+			pngPreserveColormap :		true,
+
+			// options: (int)
+			posterize :					136,
+
+			// options: (int) 0–100
+			quality :					82,
+
+			// options: adaptive, distort, geometry, interpolative, liquid, resize, sample, scale, thumbnail
+			resizeFunction :			'thumbnail',
+
+			// options: true, false
+			// note that “false” is equivalent to “null”
+			// no-optim default: true
+			strip :						null,
+
+			// see https://github.com/sindresorhus/grunt-svgmin/blob/master/readme.md and https://github.com/svg/svgo/tree/master/plugins
+			svgoPlugins :	[
+				{
+					removeUnknownsAndDefaults :	false
+				}
+			],
+
+			// options: each one is a (float)
+			// no-optim default for threshold: 0.065
+			unsharp : {
+				radius :				0.25,
+				sigma :					0.25,
+				gain :					9,
+				threshold :				0.045
+			},
+
+			// options: (int)s
 			widths : [
-							320,
-							640,
-							1280
+										320,
+										640,
+										1280
 			]
 		},
 
@@ -419,28 +504,138 @@ module.exports = function(grunt) {
 						return callback();
 					}
 
-					// process the image
-					image
-						// set the image filter
-						.filter(sizeOptions.filter);
+					var args = [srcPath];
 
-						// set the quality
-						.quality(sizeOptions.quality)
+					// set the resize filter
+					if (this.options.filter !== null) {
+						args.push('-filter');
+						args.push(this.options.filter);
+					}
 
-						// resize
-						.resize(sizeOptions.width)
+					// set the filter support
+					if (this.options.filterSupport !== null) {
+						args.push('-define');
+						args.push('filter:support=' + this.options.filterSupport);
+					}
 
-						// no transparency
-						.transparent('none')
+					// set the resize function
+					if (this.options.resizeFunction !== null) {
+						args.push('-' + this.options.resizeFunction);
+					}
 
-						// set bit depth to same as original image
-						.bitdepth(data['depth'])
+					// set the width
+					args.push(width);
 
-						// strip metadata
-						.strip();
+					// set the unsharp mask
+					if (this.options.unsharp.radius !== null &&
+						this.options.unsharp.sigma !== null &&
+						this.options.unsharp.gain !== null &&
+						this.options.unsharp.threshold !== null) {
+						args.push('-unsharp');
+						args.push(this.options.unsharp.radius + 'x' + this.options.unsharp.sigma + '+' + this.options.unsharp.gain + '+' + this.options.unsharp.threshold);
+					} else if (this.options.unsharp.radius !== null &&
+						this.options.unsharp.sigma !== null &&
+						this.options.unsharp.gain !== null) {
+						args.push('-unsharp');
+						args.push(this.options.unsharp.radius + 'x' + this.options.unsharp.sigma + '+' + this.options.unsharp.gain);
+					} else if (this.options.unsharp.radius !== null &&
+						this.options.unsharp.sigma !== null) {
+						args.push('-unsharp');
+						args.push(this.options.unsharp.radius + 'x' + this.options.unsharp.sigma);
+					} else if (this.options.unsharp.radius !== null) {
+						args.push('-unsharp');
+						args.push(this.options.unsharp.radius);
+					}
 
-					// get the extension
-					var extName = path.extname(dstPath).toLowerCase();
+					// set the dither
+					if (this.options.dither !== null) {
+						if (this.options.dither === 'plus') {
+							args.push('+dither');
+						} else {
+							args.push('-dither');
+							args.push(this.options.dither);
+						}
+					}
+
+					// set posterize
+					if (this.options.posterize !== null) {
+						args.push('-posterize');
+						args.push(this.options.posterize);
+					}
+
+					// set background
+					if (this.options.background !== null) {
+						args.push('-background');
+						args.push(this.options.background);
+					}
+
+					// set alpha
+					if (this.options.alpha !== null) {
+						args.push('-alpha');
+						args.push(this.options.alpha);
+					}
+
+					// set the quality
+					if (this.options.quality !== null) {
+						args.push('-quality');
+						args.push(this.options.quality);
+					}
+
+					// set pngPreserveColormap
+					if (this.options.pngPreserveColormap === true) {
+						args.push('-define');
+						args.push('png:preserve-colormap=true');
+					}
+
+					// set jpegFancyUpsampling
+					if (this.options.jpegFancyUpsampling !== null) {
+						args.push('-define');
+						args.push('jpeg:fancy-upsampling=' + this.options.jpegFancyUpsampling);
+					}
+
+					// set pngCompressionFilter
+					if (this.options.pngCompressionFilter !== null) {
+						args.push('-define');
+						args.push('png:compression-filter=' + this.options.pngCompressionFilter);
+					}
+
+					// set pngCompressionLevel
+					if (this.options.pngCompressionLevel !== null) {
+						args.push('-define');
+						args.push('png:compression-level=' + this.options.pngCompressionLevel);
+					}
+
+					// set pngCompressionStrategy
+					if (this.options.pngCompressionStrategy !== null) {
+						args.push('-define');
+						args.push('png:compression-strategy=' + this.options.pngCompressionStrategy);
+					}
+
+					// set pngExcludeChunk
+					if (this.options.pngExcludeChunk !== null) {
+						args.push('-define');
+						args.push('png:exclude-chunk=' + this.options.pngExcludeChunk);
+					}
+
+					// set interlace
+					if (this.options.interlace !== null) {
+						args.push('-interlace');
+						args.push(this.options.interlace);
+					}
+
+					// colorspace
+					if (this.options.colorspace !== null) {
+						args.push('-colorspace');
+						args.push(this.options.colorspace);
+					}
+
+					// set strip
+					if (this.options.strip === true) {
+						args.push('-strip');
+					}
+
+					// do the resizing
+					image.convert(args);
 
 					// write the final file
 					image.write(dstPath, function (error) {
@@ -491,6 +686,22 @@ module.exports = function(grunt) {
 
 	// let's get this party started
 	grunt.registerMultiTask('respimg', 'Automatically resizes image assets.', function() {
+		// change some default options if we’re not optimizing images
+		if (!this.options.optimize.rasterOutput) {
+			DEFAULT_OPTIONS.alpha =						'Background';
+			DEFAULT_OPTIONS.background =				'Black';
+			DEFAULT_OPTIONS.colorspace =				'sRGB';
+			DEFAULT_OPTIONS.jpegFancyUpsampling =		'off';
+			DEFAULT_OPTIONS.pngCompressionFilter =		5;
+			DEFAULT_OPTIONS.pngCompressionLevel =		9;
+			DEFAULT_OPTIONS.pngCompressionStrategy =	1;
+			DEFAULT_OPTIONS.pngExcludeChunk =			'all';
+			DEFAULT_OPTIONS.pngPreserveColormap =		true;
+			DEFAULT_OPTIONS.strip =						true;
+			DEFAULT_OPTIONS.unsharp.threshold =			0.065;
+		}
+
+		// now some setup
 		var done =			this.async(),
 			i =				0,
 			series =		[],
