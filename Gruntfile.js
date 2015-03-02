@@ -7,6 +7,8 @@
  *
  * Automatically resizes image assets
  *
+ * Portions borrowed liberally from <https://github.com/andismith/grunt-responsive-images>
+ *
  * @author David Newton (http://twitter.com/newtron)
  * @version 0.0.0
  */
