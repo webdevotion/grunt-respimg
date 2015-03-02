@@ -9,7 +9,8 @@
  *
  * Portions borrowed liberally from:
  *		<https://github.com/andismith/grunt-responsive-images>, and
- *		<https://github.com/dbushell/grunt-svg2png>
+ *		<https://github.com/dbushell/grunt-svg2png>, and
+ *		<https://github.com/JamieMason/grunt-imageoptim>
  *
  * @author David Newton (http://twitter.com/newtron)
  * @version 0.0.0
@@ -23,6 +24,18 @@ module.exports = function(grunt) {
 		im =				require('node-imagemagick'),
 		path =				require('path'),
 		phantomjs =			require('phantomjs'),
+		q =					require('q'),
+		childProcess =		require('child_process'),
+
+		cpExec =			childProcess.exec,
+		cpSpawn =			childProcess.spawn,
+		gruntFile =			path.resolve(),
+		cliPaths = [
+							'../node_modules/imageoptim-cli/bin',
+							'../../imageoptim-cli/bin'
+		].map(function(dir) {
+			return path.resolve(__dirname, dir);
+		}),
 
 		DEFAULT_OPTIONS = {
 			quality :		100,	// value between 1 and 100
@@ -35,6 +48,145 @@ module.exports = function(grunt) {
 
 
 
+
+
+
+		/**
+		 * Get the ImageOptim-CLI terminal command to be run for a given directory
+		 * @param  {String} directory
+		 * @return {String}
+		 */
+		getCommandByDirectory = function(directory) {
+			return './imageOptim --quit --directory ' + directory.replace(/\s/g, '\\ ');
+		},
+
+
+		/**
+		 * @param  {String} command
+		 * @param  {String} cwd
+		 * @return {Promise}
+		 */
+		executeDirectoryCommand = function(command, cwd) {
+			var deferred = q.defer(),
+				errorMessage = 'ImageOptim-CLI exited with a failure status',
+				imageOptimCli = cpExec(command, {
+					cwd: cwd
+				});
+
+			imageOptimCli.stdout.on('data', function(message) {
+				console.log(String(message || '').replace(/\n+$/, ''));
+			});
+
+			imageOptimCli.on('exit', function(code) {
+				return code === 0 ? deferred.resolve(true) : deferred.reject(new Error(errorMessage));
+			});
+
+			return deferred.promise;
+		},
+
+
+		/**
+		 * @param  {String[]}  files             Array of paths to directories from src: in config.
+		 * @return {Promise}
+		 */
+		function processDirectories(files, cliPath) {
+			return files.map(function(directory) {
+				return getCommandByDirectory(directory);
+			}).reduce(function(promise, command) {
+				return promise.then(function() {
+					return executeDirectoryCommand(command, cliPath);
+				});
+			}, q());
+		}
+
+
+		/**
+		 * @param  {String[]}  files             Array of paths to files from src: in config.
+		 * @return {Promise}
+		 */
+		function processFiles(files, cliPath) {
+			var imageOptimCli,
+				deferred = q.defer(),
+				errorMessage = 'ImageOptim-CLI exited with a failure status';
+
+			imageOptimCli = spawn('./imageOptim', ['--quit'], {
+				cwd: cliPath
+			});
+
+			imageOptimCli.stdout.on('data', function(message) {
+				console.log(String(message || '').replace(/\n+$/, ''));
+			});
+
+			imageOptimCli.on('exit', function(code) {
+				return code === 0 ? deferred.resolve(true) : deferred.reject(new Error(errorMessage));
+			});
+
+			imageOptimCli.stdin.setEncoding('utf8');
+			imageOptimCli.stdin.end(files.join('\n') + '\n');
+
+			return deferred.promise;
+		}
+
+
+		/**
+		 * @param  {String} str "hello"
+		 * @return {String}     "Hello"
+		 */
+		function firstUp(str) {
+			return str.charAt(0).toUpperCase() + str.slice(1);
+		}
+
+
+		/**
+		 * @param  {String}  fileType "file" or "Dir"
+		 * @return {Function}
+		 */
+		function isFileType(fileType) {
+			var methodName = 'is' + firstUp(fileType);
+			return function(file) {
+				return grunt.file[methodName](file);
+			};
+		}
+
+
+		/**
+		 * Ensure the ImageOptim-CLI binary is accessible
+		 * @return {String}
+		 */
+		function getPathToCli() {
+			return cliPaths.filter(function(cliPath) {
+				return grunt.file.exists(cliPath);
+			})[0];
+		}
+
+
+		/**
+		 * Convert a relative path to an absolute file system path
+		 * @param  {String} relativePath
+		 * @return {String}
+		 */
+		function toAbsolute(relativePath) {
+			return path.resolve(gruntFile, relativePath);
+		}
+
+
+		/**
+		 * Given a collection of files to be run in a task, seperate the files from the directories to
+		 * handle them in their own way.
+		 * @param  {String} fileType "dir" or "file"
+		 * @param  {String} cliPath
+		 * @param  {Object} options
+		 * @param  {Array} taskFiles
+		 * @param  {Promise} promise
+		 * @return {Promise}
+		 */
+		function processBatch(fileType, cliPath, options, taskFiles, promise) {
+			var files = taskFiles.filter(isFileType(fileType)).map(toAbsolute);
+			var processor = fileType === 'dir' ? processDirectories : processFiles;
+			return files.length === 0 ? promise : promise.then(function() {
+				return processor(files, cliPath);
+			});
+		}
 
 
 		/**
@@ -335,66 +487,92 @@ module.exports = function(grunt) {
 
 	// let's get this party started
 	grunt.registerMultiTask('respimg', 'Automatically resizes image assets.', function() {
-		var done =		this.async(),
-			i =			0,
-			series =	[],
-			options =	this.options(DEFAULT_OPTIONS), // Merge task-specific and/or target-specific options with these defaults.
-			tally =		{},
-			task =		this;
+		var done =			this.async(),
+			i =				0,
+			series =		[],
+			options =		this.options(DEFAULT_OPTIONS), // Merge task-specific and/or target-specific options with these defaults.
+			tally =			{},
+			task =			this,
+			promise =		q(),
+			cliPath =		getPathToCli(),
+			outputFiles = 	[];
 
 		// make sure valid sizes have been defined
 		if (!isValidArray(options.widths)) {
 			return grunt.fail.fatal('No widths have been defined.');
 		}
 
-		// for each output width, do some things…
-		options.widths.forEach(function(width) {
-			// combine the existing options with the width
-			sizeOptions.width = width;
+		// make sure ImageOptim is available
+		if (!cliPath) {
+			throw grunt.fail.fatal('Unable to locate ImageOptim-CLI.');
+		}
 
-			// make sure the width is valid
-			if (!isValidWidth(sizeOptions.width)) {
-				return grunt.log.warn('Width is invalid (' + sizeOptions.width + '). Make sure it’s an integer.');
-			}
-
-			// make sure quality is valid
-			if (!isValidQuality(sizeOptions.quality)) {
-				return grunt.log.warn('Quality is invalid (' + sizeOptions.quality + '). Make sure it’s a value between 0 and 100.');
-			}
-
-			// set an ID and use it for the tally
-			sizeOptions.id = i;
-			i++;
-			tally[sizeOptions.id] = 0;
-
-			// make sure there are valid images to resize
-			if (task.files.length === 0) {
-				return grunt.log.warn('Unable to compile; no valid source files were found.');
-			}
-
-			// iterate over all specified file groups
-			task.files.forEach(function(f) {
-				// make sure we have a valid target and source
-				checkForValidTarget(f);
-				checkForSingleSource(f);
-
-				// set the source and destination
-				var srcPath =	f.src[0],
-					dstPath =	getDestination(srcPath, f.dest, sizeOptions, f.custom_dest, f.orig.cwd);
-
-				// process the image
-				series.push(function(callback) {
-					return processImage(srcPath, dstPath, sizeOptions, tally, callback);
-				}
-			});
-
-			// output the result
-			series.push(function(callback) {
-				outputResult(tally[sizeOptions.id], sizeOptions.name);
-				return callback();
-			});
+		// optimize inputs
+		task.files.forEach(function(file) {
+			promise = processBatch('file', cliPath, options, file.src, promise);
+			promise = processBatch('dir', cliPath, options, file.src, promise);
 		});
 
-		async.series(series, done);
+		// once the optimization is finished…
+		promise.done(function() {
+
+			// for each output width, do some things…
+			options.widths.forEach(function(width) {
+				// combine the existing options with the width
+				sizeOptions.width = width;
+
+				// make sure the width is valid
+				if (!isValidWidth(sizeOptions.width)) {
+					return grunt.log.warn('Width is invalid (' + sizeOptions.width + '). Make sure it’s an integer.');
+				}
+
+				// make sure quality is valid
+				if (!isValidQuality(sizeOptions.quality)) {
+					return grunt.log.warn('Quality is invalid (' + sizeOptions.quality + '). Make sure it’s a value between 0 and 100.');
+				}
+
+				// set an ID and use it for the tally
+				sizeOptions.id = i;
+				i++;
+				tally[sizeOptions.id] = 0;
+
+				// make sure there are valid images to resize
+				if (task.files.length === 0) {
+					return grunt.log.warn('Unable to compile; no valid source files were found.');
+				}
+
+				// iterate over all specified file groups
+				task.files.forEach(function(f) {
+					// make sure we have a valid target and source
+					checkForValidTarget(f);
+					checkForSingleSource(f);
+
+					// set the source and destination
+					var srcPath =	f.src[0],
+						dstPath =	getDestination(srcPath, f.dest, sizeOptions, f.custom_dest, f.orig.cwd);
+
+					// process the image
+					series.push(function(callback) {
+						return processImage(srcPath, dstPath, sizeOptions, tally, callback);
+					}
+				});
+
+				// output the result
+				series.push(function(callback) {
+					outputResult(tally[sizeOptions.id], sizeOptions.name);
+					outputFiles.push(dstPath);
+					return callback();
+				});
+			});
+
+			// optimize outputs
+			promise = q();
+			outputFiles.forEach(function(file) {
+				promise = processBatch('file', cliPath, options, file, promise);
+			});
+			promise.done(function() {
+				async.series(series, done);
+			}
+		});
 	});
 };

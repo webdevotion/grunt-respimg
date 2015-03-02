@@ -8,8 +8,9 @@
  * Automatically resizes image assets
  *
  * Portions borrowed liberally from:
- *      <https://github.com/andismith/grunt-responsive-images>, and
- *      <https://github.com/dbushell/grunt-svg2png>
+ *		<https://github.com/andismith/grunt-responsive-images>, and
+ *		<https://github.com/dbushell/grunt-svg2png>, and
+ *		<https://github.com/JamieMason/grunt-imageoptim>
  *
  * @author David Newton (http://twitter.com/newtron)
  * @version 0.0.0
