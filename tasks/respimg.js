@@ -7,7 +7,9 @@
  *
  * Automatically resizes image assets
  *
- * Portions borrowed liberally from <https://github.com/andismith/grunt-responsive-images>
+ * Portions borrowed liberally from:
+ *		<https://github.com/andismith/grunt-responsive-images>, and
+ *		<https://github.com/dbushell/grunt-svg2png>
  *
  * @author David Newton (http://twitter.com/newtron)
  * @version 0.0.0
@@ -20,6 +22,7 @@ module.exports = function(grunt) {
 	var async =				require('async'),
 		im =				require('node-imagemagick'),
 		path =				require('path'),
+		phantomjs =			require('phantomjs'),
 
 		DEFAULT_OPTIONS = {
 			quality :		100,	// value between 1 and 100
@@ -207,59 +210,97 @@ module.exports = function(grunt) {
 		 * @param   {Object}          callback  Callback function
 		 */
 		processImage = function(srcPath, dstPath, sizeOptions, tally, callback) {
-			// load the image into ImageMagick
-			var image = im(srcPath);
+			// determine the image type by looking at the file extension
+			// TODO: do this better, maybe with something like <https://github.com/mscdex/mmmagic>
+			var extName = path.extname(dstPath).toLowerCase();
 
-			// get properties about the image
-			image.identify(function(err, data) {
+			// if it’s an SVG, generate a PNG using PhantomJS
+			if (extName === '.svg') {
 
-				// bail if there’s an error
-				if (error) {
-					handleImageErrors(error);
-				}
+				// make the destination file is a PNG
+				dstPath = dstPath.replace(/\.svg$/i, '-w' + sizeOptions.width + '.png');
+				extName = '.png';
 
-				// bail if it’s an animated GIF
-				if (isAnimatedGif(data, dstPath)) {
-					return callback();
-				}
+				var spawn = grunt.util.spawn({
+						cmd :	phantomjs.path,
+						args :	[
+								path.resolve(__dirname, 'lib/svg2png.js'),
+								srcPath,
+								dstPath,
+								sizeOptions.width
+						]
+					}
+				);
 
-				// process the image
-				image
-					// set the image filter
-					.filter(sizeOptions.filter);
+				spawn.stdout.on('data', function(buffer) {
+					try {
+						var result = JSON.parse(buffer.toString());
+						if (result.status) {
+							grunt.verbose.ok('Resized image: ' + srcPath + ' resized to ' + sizeOptions.width + 'px wide, saved to ' + dstPath);
+							tally[sizeOptions.id]++;
+							return callback();
+						}
+					} catch (error) {
+						handleImageErrors(error);
+					}
+				});
 
-					// set the quality
-					.quality(sizeOptions.quality)
 
-					// resize
-					.resize(sizeOptions.width)
+			// all other images get loaded into ImageMagick
+			} else {
+				var image = im(srcPath);
 
-					// no transparency
-					.transparent('none')
+				// get properties about the image
+				image.identify(function(err, data) {
 
-					// set bit depth to same as original image
-					.bitdepth(data['depth'])
-
-					// strip metadata
-					.strip();
-
-				// get the extension
-				var extName = path.extname(dstPath).toLowerCase();
-
-				// write the final file
-				image.write(dstPath, function (error) {
 					// bail if there’s an error
 					if (error) {
 						handleImageErrors(error);
+					}
+
+					// bail if it’s an animated GIF
+					if (isAnimatedGif(data, dstPath)) {
 						return callback();
 					}
 
-					// output info about the saved image
-					grunt.verbose.ok('Resized image: ' + srcPath + ' resized to ' + sizeOptions.width + 'px wide, saved to ' + dstPath);
-					tally[sizeOptions.id]++;
-					return callback();
+					// process the image
+					image
+						// set the image filter
+						.filter(sizeOptions.filter);
+
+						// set the quality
+						.quality(sizeOptions.quality)
+
+						// resize
+						.resize(sizeOptions.width)
+
+						// no transparency
+						.transparent('none')
+
+						// set bit depth to same as original image
+						.bitdepth(data['depth'])
+
+						// strip metadata
+						.strip();
+
+					// get the extension
+					var extName = path.extname(dstPath).toLowerCase();
+
+					// write the final file
+					image.write(dstPath, function (error) {
+						// bail if there’s an error
+						if (error) {
+							handleImageErrors(error);
+							return callback();
+						}
+
+						// output info about the saved image
+						grunt.verbose.ok('Resized image: ' + srcPath + ' resized to ' + sizeOptions.width + 'px wide, saved to ' + dstPath);
+						tally[sizeOptions.id]++;
+						return callback();
+					});
 				});
-			});
+			}
 		},
 
 
