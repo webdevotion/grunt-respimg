@@ -26,7 +26,12 @@
 				files: [{
 					expand: true,
 					cwd: 'test/assets/',
-					src: ['default_options/**.{jpg,gif,png}'],
+					src: ['raster/**.{jpg,gif,png,svg}'],
+					dest: 'tmp/'
+				},{
+					expand: true,
+					cwd: 'test/assets/',
+					src: ['svg/**.{jpg,gif,png,svg}'],
 					dest: 'tmp/'
 				}]
 			}

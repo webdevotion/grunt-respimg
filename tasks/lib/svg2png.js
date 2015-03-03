@@ -26,6 +26,8 @@ var fs =    require('fs'),
 	svgdata,
 	img,
 	html,
+	svg,
+	frag,
 
 	process = function() {
 		// open a new web page
@@ -34,19 +36,32 @@ var fs =    require('fs'),
 		// read the SVG data from the SVG file
 		svgdata = fs.read(file) || '';
 
+		// load the SVG into a div so we can measure it’s native width and height
+		frag = window.document.createElement('div');
+		frag.innerHTML = svgdata;
+		svg = frag.querySelector('svg');
+		svgWidth = svg.getAttribute('width') || '1';
+		svgWidth = parseFloat(svgWidth.replace('px', ''));
+		svgHeight = svg.getAttribute('height') || '1';
+		svgHeight = parseFloat(svgHeight.replace('px', ''));
+
+		// use the target width and the native SVG measurements to calculate a new height
+		width = parseFloat(width);
+		height = parseFloat(svgHeight * width / svgWidth);
+
 		// create an image element with the SVG data
 		img = window.document.createElement('img');
 		img.src = 'data:image/svg+xml;utf8,' + svgdata;
 
-		// set the image width to our output width
-		// height *should* adjust automatically to maintain aspect ratio
+		// set the image width and height to our output width and newly calculated height
 		img.setAttribute('width', parseFloat(width));
-		img.style.cssText = 'display: block; width: ' + width + 'px; height: auto';
+		img.setAttribute('height', parseFloat(height));
+		img.style.cssText = 'display: block; width: ' + width + 'px; height: ' + height;
 
 		// set the viewport to the size of the image
 		page.viewportSize = {
 			width: width,
-			height: img.height
+			height: height
 		};
 
 		// open a page containing the image we just created
@@ -56,6 +71,7 @@ var fs =    require('fs'),
 			page.render(dest);
 
 			// done!
+			console.log(JSON.stringify({"status": status}));
 			phantom.exit(0);
 			return;
 		});

@@ -30,6 +30,7 @@ module.exports = function(grunt) {
 		eachAsync =			require('each-async'),
 		prettyBytes =		require('pretty-bytes'),
 		SVGO =				require('svgo'),
+		fs =				require('fs'),
 
 		cpExec =			childProcess.exec,
 		cpSpawn =			childProcess.spawn,
@@ -71,6 +72,7 @@ module.exports = function(grunt) {
 			jpegFancyUpsampling :		null,
 
 			// options for each: true, false
+			// TODO: make these ints representing how many times to run optimization
 			optimize :		{
 				svg:					true,
 				rasterInput:			true,
@@ -399,16 +401,6 @@ module.exports = function(grunt) {
 		 * @param   {string}          error     The error message.
 		 */
 		handleImageErrors = function(error) {
-			/*
-			if (error && error.message && error.message.indexOf && error.message.indexOf('ENOENT') > -1) {
-				grunt.log.error(error.message);
-				grunt.fail.warn('\nPlease ensure ImageMagick is installed correctly.');
-			} else if (error && error.message) {
-				grunt.fail.warn(error.message);
-			} else {
-				grunt.fail.warn('Error…');
-			}
-			*/
 			grunt.fail.warn(error);
 		},
 
@@ -431,31 +423,17 @@ module.exports = function(grunt) {
 
 
 		/**
-		 * Outputs the result of the tally.
-		 *
-		 * @private
-		 * @param   {number}          count     The file count.
-		 * @param   {string}          name      Name of the image.
-		 */
-		outputResult = function(count, name) {
-			if (count) {
-				grunt.log.writeln('Resized ' + count.toString().cyan + ' ' +
-				grunt.util.pluralize(count, 'file/files') + ' for ' + name);
-			}
-		},
-
-
-		/**
 		 * Process the image
 		 *
 		 * @private
 		 * @param   {srcPath}         count     The source path
 		 * @param   {string}          dstPath   The destination path
-		 * @param   {Object}          dstPath   Size options
-		 * @param   {number}          tally     The file count
-		 * @param   {Object}          callback  Callback function
+		 * @param   {Object}          options   Options
+		 * @param   {int}             width     Width
 		 */
-		processImage = function(srcPath, dstPath, sizeOptions, tally, callback) {
+		processImage = function(srcPath, dstPath, options, width) {
+			var deferred = q.defer();
+
 			// determine the image type by looking at the file extension
 			// TODO: do this better, maybe with something like <https://github.com/mscdex/mmmagic>
 			var extName = path.extname(dstPath).toLowerCase();
@@ -463,18 +441,24 @@ module.exports = function(grunt) {
 			// if it’s an SVG, generate a PNG using PhantomJS
 			if (extName === '.svg') {
 
-				// make the destination file is a PNG
-				dstPath = dstPath.replace(/\.svg$/i, '-w' + sizeOptions.width + '.png');
+				// make the destination file a PNG
+				dstPath = dstPath.replace(/\.svg$/i, '.png');
 				extName = '.png';
 
-				var spawn = grunt.util.spawn({
+				var spawn = grunt.util.spawn(
+					{
 						cmd :	phantomjs.path,
 						args :	[
 								path.resolve(__dirname, 'lib/svg2png.js'),
 								srcPath,
 								dstPath,
-								sizeOptions.width
+								width
 						]
+					},
+					function doneFunction(error, result, code) {
+						if (error) {
+							return deferred.reject();
+						}
 					}
 				);
 
@@ -482,31 +466,32 @@ module.exports = function(grunt) {
 					try {
 						var result = JSON.parse(buffer.toString());
 						if (result.status) {
-							grunt.verbose.ok('Resized image: ' + srcPath + ' resized to ' + sizeOptions.width + 'px wide, saved to ' + dstPath);
-							tally[sizeOptions.id]++;
-							return callback();
+							grunt.verbose.ok('Resized image: ' + srcPath + ' resized to ' + width + 'px wide, saved to ' + dstPath);
+							return deferred.resolve(true);
+						} else {
+							return deferred.reject();
 						}
 					} catch (error) {
 						handleImageErrors(error);
+						return deferred.reject(error);
 					}
 				});
 
 
 			// all other images get loaded into ImageMagick
 			} else {
-				var image = im(srcPath);
-
 				// get properties about the image
-				image.identify(function(err, data) {
+				im.identify(srcPath, function(error, data) {
 
 					// bail if there’s an error
 					if (error) {
 						handleImageErrors(error);
+						return deferred.reject(error);
 					}
 
 					// bail if it’s an animated GIF
 					if (isAnimatedGif(data, dstPath)) {
-						return callback();
+						return deferred.resolve(true);
 					}
 
 					var args = [srcPath];
@@ -639,24 +624,25 @@ module.exports = function(grunt) {
 						args.push('-strip');
 					}
 
-					// do the resizing
-					image.convert(args);
+					// add output filename
+					args.push(dstPath);
 
-					// write the final file
-					image.write(dstPath, function (error) {
+					// do the resizing
+					im.convert(args, function(err, stdout, stderr) {
 						// bail if there’s an error
-						if (error) {
-							handleImageErrors(error);
-							return callback();
+						if (err) {
+							handleImageErrors(err);
+							return deferred.reject(error);
 						}
 
 						// output info about the saved image
-						grunt.verbose.ok('Resized image: ' + srcPath + ' resized to ' + sizeOptions.width + 'px wide, saved to ' + dstPath);
-						tally[sizeOptions.id]++;
-						return callback();
+						grunt.verbose.ok('Resized image: ' + srcPath + ' resized to ' + width + 'px wide, saved to ' + dstPath);
+						return deferred.resolve(true);
 					});
 				});
 			}
+
+			return deferred.promise;
 		},
 
 
@@ -666,12 +652,13 @@ module.exports = function(grunt) {
 		 * @private
 		 * @param   {string}          srcPath   The source path
 		 * @param   {string}          filename  Image Filename
-		 * @param   {object}          sizeOptions
+		 * @param   {object}          options
+		 * @param   {int}             width
 		 * @param   {string}          customDest
 		 * @param   {string}          origCwd
 		 * @return                    The complete path and filename
 		 */
-		getDestination = function(srcPath, dstPath, sizeOptions, customDest, origCwd) {
+		getDestination = function(srcPath, dstPath, options, width, customDest, origCwd) {
 			var baseName =	'',
 				dirName =	'',
 				extName =	'';
@@ -682,7 +669,7 @@ module.exports = function(grunt) {
 
 			checkDirectoryExists(path.join(dirName));
 
-			return path.join(dirName, baseName + '-w' + sizeOptions.width + extName);
+			return path.join(dirName, baseName + '-w' + width + extName);
 		};
 
 
@@ -716,7 +703,6 @@ module.exports = function(grunt) {
 		var done =			this.async(),
 			i =				0,
 			series =		[],
-			tally =			{},
 			task =			this,
 			promise =		q(),
 			cliPath =		getPathToCli(),
@@ -734,104 +720,119 @@ module.exports = function(grunt) {
 			return grunt.fail.fatal('Unable to locate ImageOptim-CLI.');
 		}
 
-		// optimize SVG inputs
-		eachAsync(this.files, function (el, i, next) {
-			// bail if it’s not an SVG
-			var extName = path.extname(el.dest).toLowerCase();
-			if (extName !== '.svg') {
-				next();
-				return;
-			}
+		async.series([
 
-			var	srcPath = el.src[0],
-				srcSvg = grunt.file.read(srcPath);
+			// optimize SVG inputs
+			function(callback) {
+				grunt.log.writeln('Optimizing SVG inputs…');
+				task.files.forEach(function (file) {
+					// bail if it’s not an SVG
+					var extName = path.extname(file.dest).toLowerCase();
+					if (extName === '.svg') {
+						var	srcPath = file.src[0],
+							srcSvg = grunt.file.read(srcPath);
 
-			svgo.optimize(srcSvg, function (result) {
-				if (result.error) {
-					grunt.warn('Error parsing SVG:', result.error);
-					next();
-					return;
-				}
+						svgo.optimize(srcSvg, function (result) {
+							if (result.error) {
+								grunt.warn('Error parsing SVG:', result.error);
+							} else {
+								var saved = srcSvg.length - result.data.length;
+								var percentage = saved / srcSvg.length * 100;
+								totalSaved += saved;
 
-				var saved = srcSvg.length - result.data.length;
-				var percentage = saved / srcSvg.length * 100;
-				totalSaved += saved;
-
-				grunt.log.writeln(srcPath + ' (saved ' + prettyBytes(saved) + ' ' + Math.round(percentage) + '%)');
-				grunt.file.write(el.dest, result.data);
-				next();
-			});
-		}, function () {
-			grunt.log.writeln('Total saved: ' + prettyBytes(totalSaved));
-		});
-
-		// optimize raster inputs
-		task.files.forEach(function(file) {
-			grunt.log.writeln('Optimizing raster inputs…');
-			promise = processBatch('file', cliPath, options, file.src, promise);
-			promise = processBatch('dir', cliPath, options, file.src, promise);
-		});
-
-		// once the optimization is finished…
-		promise.done(function() {
-			// for each output width, do some things…
-			options.widths.forEach(function(width) {
-				// combine the existing options with the width
-				options.width = width;
-
-				// make sure the width is valid
-				if (!isValidWidth(options.width)) {
-					return grunt.log.warn('Width is invalid (' + options.width + '). Make sure it’s an integer.');
-				}
-
-				// make sure quality is valid
-				if (!isValidQuality(options.quality)) {
-					return grunt.log.warn('Quality is invalid (' + options.quality + '). Make sure it’s a value between 0 and 100.');
-				}
-
-				// set an ID and use it for the tally
-				options.id = i;
-				i++;
-				tally[options.id] = 0;
-
-				// make sure there are valid images to resize
-				if (task.files.length === 0) {
-					return grunt.log.warn('Unable to compile; no valid source files were found.');
-				}
-
-				// iterate over all specified file groups
-				task.files.forEach(function(f) {
-					// make sure we have a valid target and source
-					checkForValidTarget(f);
-					checkForSingleSource(f);
-
-					// set the source and destination
-					var srcPath =	f.src[0],
-						dstPath =	getDestination(srcPath, f.dest, options, f.custom_dest, f.orig.cwd);
-
-					// process the image
-					series.push(function(callback) {
-						return processImage(srcPath, dstPath, options, tally, callback);
-					});
-
-					// output the result
-					series.push(function(callback) {
-						outputResult(tally[options.id], options.name);
-						outputFiles.push(dstPath);
-						return callback();
-					});
+								grunt.log.writeln(srcPath + ' (saved ' + prettyBytes(saved) + ' ' + Math.round(percentage) + '%)');
+								grunt.file.write(file.dest, result.data);
+							}
+						});
+					}
 				});
-			});
+				grunt.log.writeln('Total saved: ' + prettyBytes(totalSaved));
+				callback(null);
+			},
+
+			// optimize raster inputs
+			function(callback) {
+				grunt.log.writeln('Optimizing raster inputs…');
+				task.files.forEach(function(file) {
+					var extName = path.extname(file.dest).toLowerCase();
+					if (extName !== '.svg') {
+						promise = processBatch('file', cliPath, options, file.src, promise);
+						promise = processBatch('dir', cliPath, options, file.src, promise);
+					}
+				});
+
+				promise.done(function() {
+					callback(null);
+				});
+			},
+
+			// do some validation
+			function(callback) {
+				async.each(options.widths, function(width, callback2) {
+					// make sure the width is valid
+					if (!isValidWidth(width)) {
+						return grunt.log.warn('Width is invalid (' + width + '). Make sure it’s an integer.');
+					}
+
+					// make sure quality is valid
+					if (!isValidQuality(options.quality)) {
+						return grunt.log.warn('Quality is invalid (' + options.quality + '). Make sure it’s a value between 0 and 100.');
+					}
+
+					// make sure there are valid images to resize
+					if (task.files.length === 0) {
+						return grunt.log.warn('Unable to compile; no valid source files were found.');
+					}
+
+					callback2(null);
+				}, callback);
+			},
+
+			// process images
+			function(callback) {
+				grunt.log.writeln('Resizing images…');
+				async.each(options.widths, function(width, callback2) {
+					async.each(task.files, function(f, callback3) {
+						// make sure we have a valid target and source
+						checkForValidTarget(f);
+						checkForSingleSource(f);
+
+						// set the source and destination
+						var srcPath =	f.src[0],
+							dstPath =	getDestination(srcPath, f.dest, options, width, f.custom_dest, f.orig.cwd);
+
+						// process the image
+						var promise2 = q();
+						promise2 = processImage(srcPath, dstPath, options, width);
+						promise2.done(function() {
+							var extName = path.extname(dstPath).toLowerCase();
+							if (extName === '.svg') {
+								dstPath = dstPath.replace(/\.svg$/i, '.png');
+								extName = '.png';
+							}
+							outputFiles.push(dstPath);
+							callback3(null);
+						});
+					}, callback2);
+				}, callback);
+			},
 
 			// optimize outputs
-			promise = q();
-			outputFiles.forEach(function(file) {
-				promise = processBatch('file', cliPath, options, file, promise);
-			});
+			function(callback) {
+				grunt.log.writeln('Optimizing resized images…');
+				var promise2 = q();
+				promise2 = processFiles(outputFiles.map(function(dir) {
+					return path.resolve(__dirname, '../' + dir);
+				}), cliPath);
 
-			promise.done(function() {
-				async.series(series, done);
-			});
+				promise2.done(function() {
+					callback(null);
+				});
+			}
+
+		],
+		function(err, results) {
+			done();
 		});
 	});
 };
