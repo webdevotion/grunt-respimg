@@ -17,7 +17,29 @@
  * @version 0.0.0
  */
 
-'use strict';
+ 'use strict';
 
-module.exports = function(grunt) {
+ module.exports = function(grunt) {
+ 	grunt.initConfig({
+		respimg: {
+			target: {
+				files: [{
+					expand: true,
+					cwd: 'test/assets/',
+					src: ['default_options/**.{jpg,gif,png}'],
+					dest: 'tmp/'
+				}]
+			}
+		}
+	});
+
+	// Actually load this plugin's task(s).
+	grunt.loadTasks('tasks');
+
+	// Whenever the "test" task is run, first clean the "tmp" dir, then run this
+	// plugin's task(s), then test the result.
+	grunt.registerTask('test', ['respimg']);
+
+	// By default, lint and run all tests.
+	grunt.registerTask('default', []);
 };
