@@ -713,7 +713,7 @@ module.exports = function(grunt) {
 			promise =		q(),
 			cliPath =		getPathToCli(),
 			outputFiles = 	[],
-			svgo =			new SVGO(options),
+			svgo =			new SVGO({ plugins : options.svgoPlugins }),
 			totalSaved =	0;
 
 		// make sure valid sizes have been defined

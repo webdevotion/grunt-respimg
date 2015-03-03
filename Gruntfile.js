@@ -22,12 +22,25 @@
  module.exports = function(grunt) {
  	grunt.initConfig({
 		respimg: {
-			target: {
+			default: {
+				files: [{
+					expand: true,
+					cwd: 'test/assets/',
+					src: ['raster/**.{jpg,gif,png,svg}'],
+					dest: 'tmp/'
+				},{
+					expand: true,
+					cwd: 'test/assets/',
+					src: ['svg/**.{jpg,gif,png,svg}'],
+					dest: 'tmp/'
+				}]
+			},
+			nooptim: {
 				options: {
 					optimize: {
-						svg:			true,
-						rasterInput:	true,
-						rasterOutput:	true
+						svg:			false,
+						rasterInput:	false,
+						rasterOutput:	false
 					}
 				},
 				files: [{
@@ -36,6 +49,57 @@
 					src: ['raster/**.{jpg,gif,png,svg}'],
 					dest: 'tmp/'
 				},{
+					expand: true,
+					cwd: 'test/assets/',
+					src: ['svg/**.{jpg,gif,png,svg}'],
+					dest: 'tmp/'
+				}]
+			},
+			svgoPlugins: {
+				options: {
+					optimize: {
+						svg:			true,
+						rasterInput:	false,
+						rasterOutput:	false
+					},
+
+					svgoPlugins: [
+						{ cleanupAttrs:						false },
+						{ cleanupEnableBackground:			false },
+						{ cleanupIDs:						false },
+						{ cleanupListOfValues:				false },
+						{ cleanupNumericValues:				false },
+						{ collapseGroups:					false },
+						{ convertColors:					false },
+						{ convertPathData:					false },
+						{ convertShapeToPath:				false },
+						{ convertStyleToAttrs:				false },
+						{ convertTransform:					false },
+						{ mergePaths:						false },
+						{ moveElemsAttrsToGroup:			false },
+						{ moveGroupAttrsToElems:			false },
+						{ removeComments:					false },
+						{ removeDesc:						false },
+						{ removeDoctype:					false },
+						{ removeEditorsNSData:				false },
+						{ removeEmptyAttrs:					false },
+						{ removeEmptyContainers:			false },
+						{ removeEmptyText:					false },
+						{ removeHiddenElems:				false },
+						{ removeMetadata:					false },
+						{ removeNonInheritableGroupAttrs:	false },
+						{ removeRasterImages:				false },
+						{ removeTitle:						false },
+						{ removeUnknownsAndDefaults:		false },
+						{ removeUnusedNS:					false },
+						{ removeUselessStrokeAndFill:		false },
+						{ removeViewBox:					false },
+						{ removeXMLProcInst:				false },
+						{ sortAttrs:						false },
+						{ transformsWithOnePath:			false }
+					]
+				},
+				files: [{
 					expand: true,
 					cwd: 'test/assets/',
 					src: ['svg/**.{jpg,gif,png,svg}'],
