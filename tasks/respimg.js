@@ -466,6 +466,9 @@ module.exports = function(grunt) {
 					try {
 						var result = JSON.parse(buffer.toString());
 						if (result.status) {
+
+							// TODO: send these through ImageMagick to make them not huge?
+
 							grunt.verbose.ok('Resized image: ' + srcPath + ' resized to ' + width + 'px wide, saved to ' + dstPath);
 							return deferred.resolve(true);
 						} else {
@@ -699,6 +702,9 @@ module.exports = function(grunt) {
 			options = this.options(DEFAULT_OPTIONS);
 		}
 
+		grunt.log.writeln('Options: ');
+		console.log(options);
+
 		// now some setup
 		var done =			this.async(),
 			i =				0,
@@ -724,46 +730,52 @@ module.exports = function(grunt) {
 
 			// optimize SVG inputs
 			function(callback) {
-				grunt.log.writeln('Optimizing SVG inputs…');
-				task.files.forEach(function (file) {
-					// bail if it’s not an SVG
-					var extName = path.extname(file.dest).toLowerCase();
-					if (extName === '.svg') {
-						var	srcPath = file.src[0],
-							srcSvg = grunt.file.read(srcPath);
+				if (options.optimize.svg === true) {
+					grunt.log.writeln('Optimizing SVG inputs…');
+					task.files.forEach(function (file) {
+						// bail if it’s not an SVG
+						var extName = path.extname(file.dest).toLowerCase();
+						if (extName === '.svg') {
+							var	srcPath = file.src[0],
+								srcSvg = grunt.file.read(srcPath);
 
-						svgo.optimize(srcSvg, function (result) {
-							if (result.error) {
-								grunt.warn('Error parsing SVG:', result.error);
-							} else {
-								var saved = srcSvg.length - result.data.length;
-								var percentage = saved / srcSvg.length * 100;
-								totalSaved += saved;
+							svgo.optimize(srcSvg, function (result) {
+								if (result.error) {
+									grunt.warn('Error parsing SVG:', result.error);
+								} else {
+									var saved = srcSvg.length - result.data.length;
+									var percentage = saved / srcSvg.length * 100;
+									totalSaved += saved;
 
-								grunt.log.writeln(srcPath + ' (saved ' + prettyBytes(saved) + ' ' + Math.round(percentage) + '%)');
-								grunt.file.write(file.dest, result.data);
-							}
-						});
-					}
-				});
-				grunt.log.writeln('Total saved: ' + prettyBytes(totalSaved));
+									grunt.log.writeln(srcPath + ' (saved ' + prettyBytes(saved) + ' ' + Math.round(percentage) + '%)');
+									grunt.file.write(file.dest, result.data);
+								}
+							});
+						}
+					});
+					grunt.log.writeln('Total saved: ' + prettyBytes(totalSaved));
+				}
 				callback(null);
 			},
 
 			// optimize raster inputs
 			function(callback) {
-				grunt.log.writeln('Optimizing raster inputs…');
-				task.files.forEach(function(file) {
-					var extName = path.extname(file.dest).toLowerCase();
-					if (extName !== '.svg') {
-						promise = processBatch('file', cliPath, options, file.src, promise);
-						promise = processBatch('dir', cliPath, options, file.src, promise);
-					}
-				});
+				if (options.optimize.rasterInput === true) {
+					grunt.log.writeln('Optimizing raster inputs…');
+					task.files.forEach(function(file) {
+						var extName = path.extname(file.dest).toLowerCase();
+						if (extName !== '.svg') {
+							promise = processBatch('file', cliPath, options, file.src, promise);
+							promise = processBatch('dir', cliPath, options, file.src, promise);
+						}
+					});
 
-				promise.done(function() {
+					promise.done(function() {
+						callback(null);
+					});
+				} else {
 					callback(null);
-				});
+				}
 			},
 
 			// do some validation
@@ -819,15 +831,19 @@ module.exports = function(grunt) {
 
 			// optimize outputs
 			function(callback) {
-				grunt.log.writeln('Optimizing resized images…');
-				var promise2 = q();
-				promise2 = processFiles(outputFiles.map(function(dir) {
-					return path.resolve(__dirname, '../' + dir);
-				}), cliPath);
+				if (options.optimize.rasterInput === true) {
+					grunt.log.writeln('Optimizing resized images…');
+					var promise2 = q();
+					promise2 = processFiles(outputFiles.map(function(dir) {
+						return path.resolve(__dirname, '../' + dir);
+					}), cliPath);
 
-				promise2.done(function() {
+					promise2.done(function() {
+						callback(null);
+					});
+				} else {
 					callback(null);
-				});
+				}
 			}
 
 		],

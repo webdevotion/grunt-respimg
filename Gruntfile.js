@@ -23,6 +23,13 @@
  	grunt.initConfig({
 		respimg: {
 			target: {
+				options: {
+					optimize: {
+						svg:			true,
+						rasterInput:	true,
+						rasterOutput:	true
+					}
+				},
 				files: [{
 					expand: true,
 					cwd: 'test/assets/',
