@@ -178,7 +178,7 @@ module.exports = function(grunt) {
 		 * @param  {String[]}  files             Array of paths to directories from src: in config.
 		 * @return {Promise}
 		 */
-		function processDirectories(files, cliPath) {
+		processDirectories = function(files, cliPath) {
 			return files.map(function(directory) {
 				return getCommandByDirectory(directory);
 			}).reduce(function(promise, command) {
@@ -186,14 +186,14 @@ module.exports = function(grunt) {
 					return executeDirectoryCommand(command, cliPath);
 				});
 			}, q());
-		}
+		},
 
 
 		/**
 		 * @param  {String[]}  files             Array of paths to files from src: in config.
 		 * @return {Promise}
 		 */
-		function processFiles(files, cliPath) {
+		processFiles = function(files, cliPath) {
 			var imageOptimCli,
 				deferred = q.defer(),
 				errorMessage = 'ImageOptim-CLI exited with a failure status';
@@ -214,39 +214,39 @@ module.exports = function(grunt) {
 			imageOptimCli.stdin.end(files.join('\n') + '\n');
 
 			return deferred.promise;
-		}
+		},
 
 
 		/**
 		 * @param  {String} str "hello"
 		 * @return {String}     "Hello"
 		 */
-		function firstUp(str) {
+		firstUp = function(str) {
 			return str.charAt(0).toUpperCase() + str.slice(1);
-		}
+		},
 
 
 		/**
 		 * @param  {String}  fileType "file" or "Dir"
 		 * @return {Function}
 		 */
-		function isFileType(fileType) {
+		isFileType = function(fileType) {
 			var methodName = 'is' + firstUp(fileType);
 			return function(file) {
 				return grunt.file[methodName](file);
 			};
-		}
+		},
 
 
 		/**
 		 * Ensure the ImageOptim-CLI binary is accessible
 		 * @return {String}
 		 */
-		function getPathToCli() {
+		getPathToCli = function() {
 			return cliPaths.filter(function(cliPath) {
 				return grunt.file.exists(cliPath);
 			})[0];
-		}
+		},
 
 
 		/**
@@ -254,9 +254,9 @@ module.exports = function(grunt) {
 		 * @param  {String} relativePath
 		 * @return {String}
 		 */
-		function toAbsolute(relativePath) {
+		toAbsolute = function(relativePath) {
 			return path.resolve(gruntFile, relativePath);
-		}
+		},
 
 
 		/**
@@ -269,13 +269,13 @@ module.exports = function(grunt) {
 		 * @param  {Promise} promise
 		 * @return {Promise}
 		 */
-		function processBatch(fileType, cliPath, options, taskFiles, promise) {
+		processBatch = function(fileType, cliPath, options, taskFiles, promise) {
 			var files = taskFiles.filter(isFileType(fileType)).map(toAbsolute);
 			var processor = fileType === 'dir' ? processDirectories : processFiles;
 			return files.length === 0 ? promise : promise.then(function() {
 				return processor(files, cliPath);
 			});
-		}
+		},
 
 
 		/**
@@ -286,7 +286,7 @@ module.exports = function(grunt) {
 		 * @return  {boolean}         Whether it is a valid array with items.
 		 */
 		isValidArray = function(obj) {
-			return (obj.isArray() && obj.length > 0);
+			return (Array.isArray(obj) && obj.length > 0);
 		},
 
 
@@ -303,7 +303,7 @@ module.exports = function(grunt) {
 
 			if (width) {
 				// check if we have a valid pixel value
-				if (!!(width || 0).toString().match(pxRegExp) {
+				if (!!(width || 0).toString().match(pxRegExp)) {
 					isValid = true;
 				} else {
 					grunt.log.error('Width value is not valid.');
@@ -399,12 +399,17 @@ module.exports = function(grunt) {
 		 * @param   {string}          error     The error message.
 		 */
 		handleImageErrors = function(error) {
-			if (error.message.indexOf('ENOENT') > -1) {
+			/*
+			if (error && error.message && error.message.indexOf && error.message.indexOf('ENOENT') > -1) {
 				grunt.log.error(error.message);
 				grunt.fail.warn('\nPlease ensure ImageMagick is installed correctly.');
-			} else {
+			} else if (error && error.message) {
 				grunt.fail.warn(error.message);
+			} else {
+				grunt.fail.warn('Error…');
 			}
+			*/
+			grunt.fail.warn(error);
 		},
 
 
@@ -507,130 +512,130 @@ module.exports = function(grunt) {
 					var args = [srcPath];
 
 					// set the resize filter
-					if (this.options.filter !== null) {
+					if (options.filter !== null) {
 						args.push('-filter');
-						args.push(this.options.filter);
+						args.push(options.filter);
 					}
 
 					// set the filter support
-					if (this.options.filterSupport !== null) {
+					if (options.filterSupport !== null) {
 						args.push('-define');
-						args.push('filter:support=' + this.options.filterSupport);
+						args.push('filter:support=' + options.filterSupport);
 					}
 
 					// set the resize function
-					if (this.options.resizeFunction !== null) {
-						args.push('-' + this.options.resizeFunction);
+					if (options.resizeFunction !== null) {
+						args.push('-' + options.resizeFunction);
 					}
 
 					// set the width
 					args.push(width);
 
 					// set the unsharp mask
-					if (this.options.unsharp.radius !== null &&
-						this.options.unsharp.sigma !== null &&
-						this.options.unsharp.gain !== null &&
-						this.options.unsharp.threshold !== null) {
+					if (options.unsharp.radius !== null &&
+						options.unsharp.sigma !== null &&
+						options.unsharp.gain !== null &&
+						options.unsharp.threshold !== null) {
 						args.push('-unsharp');
-						args.push(this.options.unsharp.radius + 'x' + this.options.unsharp.sigma + '+' + this.options.unsharp.gain + '+' + this.options.unsharp.threshold);
-					} else if (this.options.unsharp.radius !== null &&
-						this.options.unsharp.sigma !== null &&
-						this.options.unsharp.gain !== null) {
+						args.push(options.unsharp.radius + 'x' + options.unsharp.sigma + '+' + options.unsharp.gain + '+' + options.unsharp.threshold);
+					} else if (options.unsharp.radius !== null &&
+						options.unsharp.sigma !== null &&
+						options.unsharp.gain !== null) {
 						args.push('-unsharp');
-						args.push(this.options.unsharp.radius + 'x' + this.options.unsharp.sigma + '+' + this.options.unsharp.gain);
-					} else if (this.options.unsharp.radius !== null &&
-						this.options.unsharp.sigma !== null) {
+						args.push(options.unsharp.radius + 'x' + options.unsharp.sigma + '+' + options.unsharp.gain);
+					} else if (options.unsharp.radius !== null &&
+						options.unsharp.sigma !== null) {
 						args.push('-unsharp');
-						args.push(this.options.unsharp.radius + 'x' + this.options.unsharp.sigma);
-					} else if (this.options.unsharp.radius !== null) {
+						args.push(options.unsharp.radius + 'x' + options.unsharp.sigma);
+					} else if (options.unsharp.radius !== null) {
 						args.push('-unsharp');
-						args.push(this.options.unsharp.radius);
+						args.push(options.unsharp.radius);
 					}
 
 					// set the dither
-					if (this.options.dither !== null) {
-						if (this.options.dither === 'plus') {
+					if (options.dither !== null) {
+						if (options.dither === 'plus') {
 							args.push('+dither');
 						} else {
 							args.push('-dither');
-							args.push(this.options.dither);
+							args.push(options.dither);
 						}
 					}
 
 					// set posterize
-					if (this.options.posterize !== null) {
+					if (options.posterize !== null) {
 						args.push('-posterize');
-						args.push(this.options.posterize);
+						args.push(options.posterize);
 					}
 
 					// set background
-					if (this.options.background !== null) {
+					if (options.background !== null) {
 						args.push('-background');
-						args.push(this.options.background);
+						args.push(options.background);
 					}
 
 					// set alpha
-					if (this.options.alpha !== null) {
+					if (options.alpha !== null) {
 						args.push('-alpha');
-						args.push(this.options.alpha);
+						args.push(options.alpha);
 					}
 
 					// set the quality
-					if (this.options.quality !== null) {
+					if (options.quality !== null) {
 						args.push('-quality');
-						args.push(this.options.quality);
+						args.push(options.quality);
 					}
 
 					// set pngPreserveColormap
-					if (this.options.pngPreserveColormap === true) {
+					if (options.pngPreserveColormap === true) {
 						args.push('-define');
 						args.push('png:preserve-colormap=true');
 					}
 
 					// set jpegFancyUpsampling
-					if (this.options.jpegFancyUpsampling !== null) {
+					if (options.jpegFancyUpsampling !== null) {
 						args.push('-define');
-						args.push('jpeg:fancy-upsampling=' + this.options.jpegFancyUpsampling);
+						args.push('jpeg:fancy-upsampling=' + options.jpegFancyUpsampling);
 					}
 
 					// set pngCompressionFilter
-					if (this.options.pngCompressionFilter !== null) {
+					if (options.pngCompressionFilter !== null) {
 						args.push('-define');
-						args.push('png:compression-filter=' + this.options.pngCompressionFilter);
+						args.push('png:compression-filter=' + options.pngCompressionFilter);
 					}
 
 					// set pngCompressionLevel
-					if (this.options.pngCompressionLevel !== null) {
+					if (options.pngCompressionLevel !== null) {
 						args.push('-define');
-						args.push('png:compression-level=' + this.options.pngCompressionLevel);
+						args.push('png:compression-level=' + options.pngCompressionLevel);
 					}
 
 					// set pngCompressionStrategy
-					if (this.options.pngCompressionStrategy !== null) {
+					if (options.pngCompressionStrategy !== null) {
 						args.push('-define');
-						args.push('png:compression-strategy=' + this.options.pngCompressionStrategy);
+						args.push('png:compression-strategy=' + options.pngCompressionStrategy);
 					}
 
 					// set pngExcludeChunk
-					if (this.options.pngExcludeChunk !== null) {
+					if (options.pngExcludeChunk !== null) {
 						args.push('-define');
-						args.push('png:exclude-chunk=' + this.options.pngExcludeChunk);
+						args.push('png:exclude-chunk=' + options.pngExcludeChunk);
 					}
 
 					// set interlace
-					if (this.options.interlace !== null) {
+					if (options.interlace !== null) {
 						args.push('-interlace');
-						args.push(this.options.interlace);
+						args.push(options.interlace);
 					}
 
 					// colorspace
-					if (this.options.colorspace !== null) {
+					if (options.colorspace !== null) {
 						args.push('-colorspace');
-						args.push(this.options.colorspace);
+						args.push(options.colorspace);
 					}
 
 					// set strip
-					if (this.options.strip === true) {
+					if (options.strip === true) {
 						args.push('-strip');
 					}
 
@@ -686,8 +691,13 @@ module.exports = function(grunt) {
 
 	// let's get this party started
 	grunt.registerMultiTask('respimg', 'Automatically resizes image assets.', function() {
+		var task = this;
+
+		// Merge task-specific and/or target-specific options with these defaults.
+		var options = this.options(DEFAULT_OPTIONS);
+
 		// change some default options if we’re not optimizing images
-		if (!this.options.optimize.rasterOutput) {
+		if (!options.optimize.rasterOutput) {
 			DEFAULT_OPTIONS.alpha =						'Background';
 			DEFAULT_OPTIONS.background =				'Black';
 			DEFAULT_OPTIONS.colorspace =				'sRGB';
@@ -699,19 +709,20 @@ module.exports = function(grunt) {
 			DEFAULT_OPTIONS.pngPreserveColormap =		true;
 			DEFAULT_OPTIONS.strip =						true;
 			DEFAULT_OPTIONS.unsharp.threshold =			0.065;
+			options = this.options(DEFAULT_OPTIONS);
 		}
 
 		// now some setup
 		var done =			this.async(),
 			i =				0,
 			series =		[],
-			options =		this.options(DEFAULT_OPTIONS), // Merge task-specific and/or target-specific options with these defaults.
 			tally =			{},
 			task =			this,
 			promise =		q(),
 			cliPath =		getPathToCli(),
 			outputFiles = 	[],
-			svgo =			new SVGO(this.options());
+			svgo =			new SVGO(options),
+			totalSaved =	0;
 
 		// make sure valid sizes have been defined
 		if (!isValidArray(options.widths)) {
@@ -720,13 +731,13 @@ module.exports = function(grunt) {
 
 		// make sure ImageOptim is available
 		if (!cliPath) {
-			throw grunt.fail.fatal('Unable to locate ImageOptim-CLI.');
+			return grunt.fail.fatal('Unable to locate ImageOptim-CLI.');
 		}
 
 		// optimize SVG inputs
 		eachAsync(this.files, function (el, i, next) {
 			// bail if it’s not an SVG
-			var extName = path.extname(dstPath).toLowerCase();
+			var extName = path.extname(el.dest).toLowerCase();
 			if (extName !== '.svg') {
 				next();
 				return;
@@ -756,32 +767,32 @@ module.exports = function(grunt) {
 
 		// optimize raster inputs
 		task.files.forEach(function(file) {
+			grunt.log.writeln('Optimizing raster inputs…');
 			promise = processBatch('file', cliPath, options, file.src, promise);
 			promise = processBatch('dir', cliPath, options, file.src, promise);
 		});
 
 		// once the optimization is finished…
 		promise.done(function() {
-
 			// for each output width, do some things…
 			options.widths.forEach(function(width) {
 				// combine the existing options with the width
-				sizeOptions.width = width;
+				options.width = width;
 
 				// make sure the width is valid
-				if (!isValidWidth(sizeOptions.width)) {
-					return grunt.log.warn('Width is invalid (' + sizeOptions.width + '). Make sure it’s an integer.');
+				if (!isValidWidth(options.width)) {
+					return grunt.log.warn('Width is invalid (' + options.width + '). Make sure it’s an integer.');
 				}
 
 				// make sure quality is valid
-				if (!isValidQuality(sizeOptions.quality)) {
-					return grunt.log.warn('Quality is invalid (' + sizeOptions.quality + '). Make sure it’s a value between 0 and 100.');
+				if (!isValidQuality(options.quality)) {
+					return grunt.log.warn('Quality is invalid (' + options.quality + '). Make sure it’s a value between 0 and 100.');
 				}
 
 				// set an ID and use it for the tally
-				sizeOptions.id = i;
+				options.id = i;
 				i++;
-				tally[sizeOptions.id] = 0;
+				tally[options.id] = 0;
 
 				// make sure there are valid images to resize
 				if (task.files.length === 0) {
@@ -796,19 +807,19 @@ module.exports = function(grunt) {
 
 					// set the source and destination
 					var srcPath =	f.src[0],
-						dstPath =	getDestination(srcPath, f.dest, sizeOptions, f.custom_dest, f.orig.cwd);
+						dstPath =	getDestination(srcPath, f.dest, options, f.custom_dest, f.orig.cwd);
 
 					// process the image
 					series.push(function(callback) {
-						return processImage(srcPath, dstPath, sizeOptions, tally, callback);
-					}
-				});
+						return processImage(srcPath, dstPath, options, tally, callback);
+					});
 
-				// output the result
-				series.push(function(callback) {
-					outputResult(tally[sizeOptions.id], sizeOptions.name);
-					outputFiles.push(dstPath);
-					return callback();
+					// output the result
+					series.push(function(callback) {
+						outputResult(tally[options.id], options.name);
+						outputFiles.push(dstPath);
+						return callback();
+					});
 				});
 			});
 
@@ -817,9 +828,10 @@ module.exports = function(grunt) {
 			outputFiles.forEach(function(file) {
 				promise = processBatch('file', cliPath, options, file, promise);
 			});
+
 			promise.done(function() {
 				async.series(series, done);
-			}
+			});
 		});
 	});
 };
