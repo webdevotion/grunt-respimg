@@ -141,56 +141,6 @@ module.exports = function(grunt) {
 
 
 
-
-		/**
-		 * Get the ImageOptim-CLI terminal command to be run for a given directory
-		 * @param  {String} directory
-		 * @return {String}
-		 */
-		getCommandByDirectory = function(directory) {
-			return './imageOptim --quit --directory ' + directory.replace(/\s/g, '\\ ');
-		},
-
-
-		/**
-		 * @param  {String} command
-		 * @param  {String} cwd
-		 * @return {Promise}
-		 */
-		executeDirectoryCommand = function(command, cwd) {
-			var deferred = q.defer(),
-				errorMessage = 'ImageOptim-CLI exited with a failure status',
-				imageOptimCli = cpExec(command, {
-					cwd: cwd
-				});
-
-			imageOptimCli.stdout.on('data', function(message) {
-				console.log(String(message || '').replace(/\n+$/, ''));
-			});
-
-			imageOptimCli.on('exit', function(code) {
-				return code === 0 ? deferred.resolve(true) : deferred.reject(new Error(errorMessage));
-			});
-
-			return deferred.promise;
-		},
-
-
-		/**
-		 * @param  {String[]}  files             Array of paths to directories from src: in config.
-		 * @return {Promise}
-		 */
-		processDirectories = function(files, cliPath) {
-			return files.map(function(directory) {
-				return getCommandByDirectory(directory);
-			}).reduce(function(promise, command) {
-				return promise.then(function() {
-					return executeDirectoryCommand(command, cliPath);
-				});
-			}, q());
-		},
-
-
 		/**
 		 * @param  {String[]}  files             Array of paths to files from src: in config.
 		 * @return {Promise}
@@ -205,7 +155,7 @@ module.exports = function(grunt) {
 			});
 
 			imageOptimCli.stdout.on('data', function(message) {
-				console.log(String(message || '').replace(/\n+$/, ''));
+				grunt.verbose.writeln(String(message || '').replace(/\n+$/, ''));
 			});
 
 			imageOptimCli.on('exit', function(code) {
@@ -220,27 +170,6 @@ module.exports = function(grunt) {
 
 
 		/**
-		 * @param  {String} str "hello"
-		 * @return {String}     "Hello"
-		 */
-		firstUp = function(str) {
-			return str.charAt(0).toUpperCase() + str.slice(1);
-		},
-
-
-		/**
-		 * @param  {String}  fileType "file" or "Dir"
-		 * @return {Function}
-		 */
-		isFileType = function(fileType) {
-			var methodName = 'is' + firstUp(fileType);
-			return function(file) {
-				return grunt.file[methodName](file);
-			};
-		},
-
-
-		/**
 		 * Ensure the ImageOptim-CLI binary is accessible
 		 * @return {String}
 		 */
@@ -248,35 +177,6 @@ module.exports = function(grunt) {
 			return cliPaths.filter(function(cliPath) {
 				return grunt.file.exists(cliPath);
 			})[0];
-		},
-
-
-		/**
-		 * Convert a relative path to an absolute file system path
-		 * @param  {String} relativePath
-		 * @return {String}
-		 */
-		toAbsolute = function(relativePath) {
-			return path.resolve(gruntFile, relativePath);
-		},
-
-
-		/**
-		 * Given a collection of files to be run in a task, seperate the files from the directories to
-		 * handle them in their own way.
-		 * @param  {String} fileType "dir" or "file"
-		 * @param  {String} cliPath
-		 * @param  {Object} options
-		 * @param  {Array} taskFiles
-		 * @param  {Promise} promise
-		 * @return {Promise}
-		 */
-		processBatch = function(fileType, cliPath, options, taskFiles, promise) {
-			var files = taskFiles.filter(isFileType(fileType)).map(toAbsolute);
-			var processor = fileType === 'dir' ? processDirectories : processFiles;
-			return files.length === 0 ? promise : promise.then(function() {
-				return processor(files, cliPath);
-			});
 		},
 
 
@@ -332,18 +232,6 @@ module.exports = function(grunt) {
 			}
 
 			return true;
-		},
-
-
-		/**
-		 * Add a suffix.
-		 *
-		 * @private
-		 * @param   {string}          root          The root value
-		 * @param   {string}          suffix        The required suffix
-		 */
-		addPrefixSuffix = function(root, suffix) {
-			return root + (suffix || '');
 		},
 
 
@@ -493,6 +381,7 @@ module.exports = function(grunt) {
 					}
 
 					// bail if it’s an animated GIF
+					// TODO: this isn’t working
 					if (isAnimatedGif(data, dstPath)) {
 						return deferred.resolve(true);
 					}
@@ -673,7 +562,47 @@ module.exports = function(grunt) {
 			checkDirectoryExists(path.join(dirName));
 
 			return path.join(dirName, baseName + '-w' + width + extName);
-		};
+		},
+
+
+
+		optimizeSVG = function(file, options) {
+			// setup the promise and SVGO
+			var deferred =	q.defer(),
+				svgo =		new SVGO({ plugins : options.svgoPlugins });
+
+			// bail if it’s not an SVG
+			var extName = path.extname(file.dest).toLowerCase();
+			if (extName !== '.svg') {
+				deferred.resolve(false);
+				return deferred.promise;
+			}
+
+			// get the path and load the SVG
+			var	srcPath = file.src[0],
+				srcSvg = grunt.file.read(srcPath);
+
+			// optimize the SVG
+			svgo.optimize(srcSvg, function(result) {
+				if (result.error) {
+
+					// if there’s an error, fail
+					deferred.reject('Error parsing SVG:', result.error)
+
+				} else {
+
+					// calculate the savings
+					var saved = srcSvg.length - result.data.length,
+						percentage = saved / srcSvg.length * 100;
+
+					// write the file and resolve the promise
+					grunt.file.write(file.dest, result.data);
+					deferred.resolve(srcPath + ' (saved ' + prettyBytes(saved) + ' ' + Math.round(percentage) + '%)');
+				}
+			});
+
+			return deferred.promise;
+		}
 
 
 
@@ -702,8 +631,8 @@ module.exports = function(grunt) {
 			options = this.options(DEFAULT_OPTIONS);
 		}
 
-		grunt.log.writeln('Options: ');
-		console.log(options);
+		grunt.verbose.writeln('Real options: ');
+		grunt.verbose.writeln(JSON.stringify(options));
 
 		// now some setup
 		var done =			this.async(),
@@ -711,9 +640,9 @@ module.exports = function(grunt) {
 			series =		[],
 			task =			this,
 			promise =		q(),
+			promise2 =		q(),
 			cliPath =		getPathToCli(),
 			outputFiles = 	[],
-			svgo =			new SVGO({ plugins : options.svgoPlugins }),
 			totalSaved =	0;
 
 		// make sure valid sizes have been defined
@@ -728,125 +657,188 @@ module.exports = function(grunt) {
 
 		async.series([
 
+			// do some validation
+			function(callback) {
+				// tell the user what we’re doing
+				grunt.verbose.writeln('Validating options…');
+
+				// make sure quality is valid
+				if (!isValidQuality(options.quality)) {
+					return grunt.log.warn('Quality is invalid (' + options.quality + '). Make sure it’s a value between 0 and 100.');
+				}
+
+				// make sure there are images to resize
+				if (task.files.length === 0) {
+					return grunt.log.warn('Unable to compile; no valid source files were found.');
+				}
+
+				// make sure the widths are valid
+				async.each(options.widths, function(width, callback2) {
+					if (!isValidWidth(width)) {
+						return grunt.log.warn('Width is invalid (' + width + '). Make sure it’s an integer.');
+					}
+					callback2(null);
+				}, callback);
+
+				// TODO: validate more options
+
+			},
+
 			// optimize SVG inputs
 			function(callback) {
+
+				// only do this if the options to optimize SVGs is set to true
 				if (options.optimize.svg === true) {
+
+					// tell the user that we’re optiming SVGs
 					grunt.log.writeln('Optimizing SVG inputs…');
-					task.files.forEach(function (file) {
-						// bail if it’s not an SVG
-						var extName = path.extname(file.dest).toLowerCase();
-						if (extName === '.svg') {
-							var	srcPath = file.src[0],
-								srcSvg = grunt.file.read(srcPath);
 
-							svgo.optimize(srcSvg, function (result) {
-								if (result.error) {
-									grunt.warn('Error parsing SVG:', result.error);
-								} else {
-									var saved = srcSvg.length - result.data.length;
-									var percentage = saved / srcSvg.length * 100;
-									totalSaved += saved;
+					// asynchronously loop through the files
+					async.each(task.files, function(file, callback2) {
 
-									grunt.log.writeln(srcPath + ' (saved ' + prettyBytes(saved) + ' ' + Math.round(percentage) + '%)');
-									grunt.file.write(file.dest, result.data);
-								}
-							});
-						}
-					});
-					grunt.log.writeln('Total saved: ' + prettyBytes(totalSaved));
+						// create a promise to optimize the SVGs
+						promise = optimizeSVG(file, options);
+
+						// when that promise is finished, print the results onscreen
+						// (if we’re being verbose)
+						// and continue onwards
+						promise.done(function(results) {
+							if (results) {
+								grunt.verbose.writeln(results);
+							}
+							callback2(null);
+						});
+
+					}, callback);
+
+				// if we’re not optimizing SVGs, just move along
+				} else {
+					callback(null);
 				}
-				callback(null);
+
 			},
 
 			// optimize raster inputs
 			function(callback) {
+
+				// only do this if the options to optimize input raster images is set to true
 				if (options.optimize.rasterInput === true) {
-					grunt.log.writeln('Optimizing raster inputs…');
+
+					// build a list of individual files
+					var rasterFiles =	[];
 					task.files.forEach(function(file) {
-						var extName = path.extname(file.dest).toLowerCase();
-						if (extName !== '.svg') {
-							promise = processBatch('file', cliPath, options, file.src, promise);
-							promise = processBatch('dir', cliPath, options, file.src, promise);
+						if (!grunt.file.isDir(file.src[0]) && path.extname(file.dest).toLowerCase() !== '.svg') {
+							rasterFiles.push(file.src[0]);
 						}
 					});
 
-					promise.done(function() {
+					// if there’s anything to optimize…
+					if (rasterFiles.length > 0) {
+
+						// get absolute paths to the stuff we’re optimizing
+						rasterFiles = rasterFiles.map(function(dir) {
+							return path.resolve(__dirname, '../' + dir);
+						});
+
+						// let the user know that we’re optimizing inputs
+						grunt.log.writeln('Optimizing raster inputs…');
+
+						// do the optimizations (with promises)
+						promise = processFiles(rasterFiles, cliPath);
+						promise.done(function() {
+							callback(null);
+						});
+
+					} else {
 						callback(null);
-					});
+					}
 				} else {
 					callback(null);
 				}
-			},
 
-			// do some validation
-			function(callback) {
-				async.each(options.widths, function(width, callback2) {
-					// make sure the width is valid
-					if (!isValidWidth(width)) {
-						return grunt.log.warn('Width is invalid (' + width + '). Make sure it’s an integer.');
-					}
-
-					// make sure quality is valid
-					if (!isValidQuality(options.quality)) {
-						return grunt.log.warn('Quality is invalid (' + options.quality + '). Make sure it’s a value between 0 and 100.');
-					}
-
-					// make sure there are valid images to resize
-					if (task.files.length === 0) {
-						return grunt.log.warn('Unable to compile; no valid source files were found.');
-					}
-
-					callback2(null);
-				}, callback);
 			},
 
 			// process images
 			function(callback) {
+
+				// tell the user what we’re doing
 				grunt.log.writeln('Resizing images…');
+
+				// loop through each output width
 				async.each(options.widths, function(width, callback2) {
-					async.each(task.files, function(f, callback3) {
+
+					// loop through each input
+					async.each(task.files, function(file, callback3) {
+
 						// make sure we have a valid target and source
-						checkForValidTarget(f);
-						checkForSingleSource(f);
+						checkForValidTarget(file);
+						checkForSingleSource(file);
 
 						// set the source and destination
-						var srcPath =	f.src[0],
-							dstPath =	getDestination(srcPath, f.dest, options, width, f.custom_dest, f.orig.cwd);
+						var srcPath =	file.src[0],
+							dstPath =	getDestination(srcPath, file.dest, options, width, file.custom_dest, file.orig.cwd);
 
-						// process the image
+						// process the image with a promise
 						var promise2 = q();
 						promise2 = processImage(srcPath, dstPath, options, width);
+
+						// once the image has been processed
 						promise2.done(function() {
+
+							// if it’s an SVG, make sure we record that the output was a PNG
 							var extName = path.extname(dstPath).toLowerCase();
 							if (extName === '.svg') {
 								dstPath = dstPath.replace(/\.svg$/i, '.png');
 								extName = '.png';
 							}
+
+							// record the output path for optimization
 							outputFiles.push(dstPath);
+
 							callback3(null);
+
 						});
+
 					}, callback2);
+
 				}, callback);
+
 			},
 
 			// optimize outputs
 			function(callback) {
-				if (options.optimize.rasterInput === true) {
-					grunt.log.writeln('Optimizing resized images…');
-					var promise2 = q();
-					promise2 = processFiles(outputFiles.map(function(dir) {
-						return path.resolve(__dirname, '../' + dir);
-					}), cliPath);
 
-					promise2.done(function() {
+				// only do this if the options to optimize input raster images is set to true
+				if (options.optimize.rasterOutput === true) {
+
+					// if there’s anything to optimize…
+					if (outputFiles.length > 0) {
+
+						// get absolute paths to the stuff we’re optimizing
+						outputFiles = outputFiles.map(function(dir) {
+							return path.resolve(__dirname, '../' + dir);
+						});
+
+						// let the user know that we’re optimizing inputs
+						grunt.log.writeln('Optimizing raster resized images…');
+
+						// do the optimizations (with promises)
+						promise = processFiles(outputFiles, cliPath);
+						promise.done(function() {
+							callback(null);
+						});
+
+					} else {
 						callback(null);
-					});
+					}
 				} else {
 					callback(null);
 				}
+
 			}
 
 		],
+
 		function(err, results) {
 			done();
 		});
