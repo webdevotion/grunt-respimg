@@ -53,7 +53,7 @@ module.exports = function(grunt) {
 			// options: FloydSteinberg, None, plus, Riemersma
 			dither :					'None',
 
-			// options: Bartlett, Bessel, Blackman, Bohman, Box, Catrom, Cosine, Cubic, Gaussian, Hamming, Hann, Hanning, Hermite, Jinc, Kaiser, Lagrange, Lanczos, Lanczos2, Lanczos2Sharp, LanczosRadius, LanczosSharp, Mitchell, none, Parzen, Point, Quadratic, Robidoux, RobidouxSharp, Sinc, SincFast, Spline, Triangle, Welch, Welsh
+			// options: Bartlett, Bessel, Blackman, Bohman, Box, Catrom, Cosine, Cubic, Gaussian, Hamming, Hann, Hanning, Hermite, Jinc, Kaiser, Lagrange, Lanczos, Lanczos2, Lanczos2Sharp, LanczosRadius, LanczosSharp, Mitchell, Parzen, Point, Quadratic, Robidoux, RobidouxSharp, Sinc, SincFast, Spline, Triangle, Welch, Welsh
 			filter :					'Triangle',
 
 			// options: (float)
@@ -86,7 +86,7 @@ module.exports = function(grunt) {
 			// no-optim default: 1
 			pngCompressionStrategy :	null,
 
-			// options: “all” or the name of chunk(s) to be excluded (see http://www.imagemagick.org/script/command-line-options.php#define)
+			// options: “all”, “date”, “none”, or the name(s) of chunk(s) to be excluded (see http://www.imagemagick.org/script/command-line-options.php#define)
 			// no-optim default: all
 			pngExcludeChunk :			null,
 
@@ -351,6 +351,9 @@ module.exports = function(grunt) {
 				// set the resize function
 				if (options.resizeFunction !== null) {
 					args.push('-' + options.resizeFunction);
+					if (options.resizeFunction === 'Distort') {
+						args.push('Resize');
+					}
 				}
 
 				// set the width
