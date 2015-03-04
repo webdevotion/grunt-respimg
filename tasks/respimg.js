@@ -22,20 +22,15 @@
 module.exports = function(grunt) {
 
 	var async =				require('async'),
+		childProcess =		require('child_process'),
 		im =				require('node-imagemagick'),
 		path =				require('path'),
 		phantomjs =			require('phantomjs'),
 		q =					require('q'),
-		childProcess =		require('child_process'),
-		eachAsync =			require('each-async'),
-		prettyBytes =		require('pretty-bytes'),
 		SVGO =				require('svgo'),
-		fs =				require('fs'),
 
-		cpExec =			childProcess.exec,
 		cpSpawn =			childProcess.spawn,
-		gruntFile =			path.resolve(),
-		cliPaths = [
+		imageOptimPaths = [
 							'../node_modules/imageoptim-cli/bin',
 							'../../imageoptim-cli/bin'
 		].map(function(dir) {
@@ -142,135 +137,7 @@ module.exports = function(grunt) {
 
 
 		/**
-		 * @param  {String[]}  files             Array of paths to files from src: in config.
-		 * @return {Promise}
-		 */
-		processFiles = function(files, cliPath) {
-			var imageOptimCli,
-				deferred = q.defer(),
-				errorMessage = 'ImageOptim-CLI exited with a failure status';
-
-			imageOptimCli = cpSpawn('./imageOptim', ['--quit'], {
-				cwd: cliPath
-			});
-
-			imageOptimCli.stdout.on('data', function(message) {
-				grunt.verbose.writeln(String(message || '').replace(/\n+$/, ''));
-			});
-
-			imageOptimCli.on('exit', function(code) {
-				return code === 0 ? deferred.resolve(true) : deferred.reject(new Error(errorMessage));
-			});
-
-			imageOptimCli.stdin.setEncoding('utf8');
-			imageOptimCli.stdin.end(files.join('\n') + '\n');
-
-			return deferred.promise;
-		},
-
-
-		/**
-		 * Ensure the ImageOptim-CLI binary is accessible
-		 * @return {String}
-		 */
-		getPathToCli = function() {
-			return cliPaths.filter(function(cliPath) {
-				return grunt.file.exists(cliPath);
-			})[0];
-		},
-
-
-		/**
-		 * Checks for a valid array, and that there are items in the array.
-		 *
-		 * @private
-		 * @param   {object}          obj       The object to check
-		 * @return  {boolean}         Whether it is a valid array with items.
-		 */
-		isValidArray = function(obj) {
-			return (Array.isArray(obj) && obj.length > 0);
-		},
-
-
-		/**
-		 * Checks for a valid width
-		 *
-		 * @private
-		 * @param   {number/string}   width     The width as a number of pixels
-		 * @return  {boolean}         Whether the size is valid.
-		 */
-		isValidWidth = function(width) {
-			var pxRegExp =	/^[0-9]+$/,
-				isValid =	false;
-
-			if (width) {
-				// check if we have a valid pixel value
-				if (!!(width || 0).toString().match(pxRegExp)) {
-					isValid = true;
-				} else {
-					grunt.log.error('Width value is not valid.');
-				}
-
-			} else {
-				grunt.log.error('Width must be specified.');
-			}
-
-			return isValid;
-		},
-
-
-		/**
-		 * Checks for a valid quality
-		 *
-		 * @private
-		 * @param   {number/string}   quality     The quality, a value from 1–100
-		 * @return  {boolean}         Whether the quality is valid.
-		 */
-		isValidQuality = function(quality) {
-			if (quality < 1 || quality > 100) {
-				return false;
-			}
-
-			return true;
-		},
-
-
-		/**
-		 * Check the target has been set up properly in Grunt.
-		 * Graceful handling of https://github.com/andismith/grunt-responsive-images/issues/2
-		 *
-		 * @private
-		 * @param   {object}          files         The files object
-		 */
-		checkForValidTarget = function(files) {
-			var test;
-
-			try {
-				test = files.src;
-			} catch (exception) {
-				grunt.fail.fatal('Unable to read configuration.\n' +
-				'Have you specified a target? See: http://gruntjs.com/configuring-tasks');
-			}
-		},
-
-
-		/**
-		 * Check that there is only one source file in compact/files object format.
-		 *
-		 * @private
-		 * @param   {object}          files         The files object
-		 */
-		checkForSingleSource = function(files) {
-			// more than 1 source.
-			if (files.src.length > 1) {
-				return grunt.fail.warn('Unable to resize more than one image in compact or files object format.\n'+
-				'For multiple files please use the files array format.\nSee http://gruntjs.com/configuring-tasks');
-			}
-		},
-
-
-		/**
-		 * Check if a directory exists, and create it if it doesn't.
+		 * Check if a directory exists, and create it if it doesn’t.
 		 *
 		 * @private
 		 * @param   {string}          dirPath   The path we want to check
@@ -283,274 +150,15 @@ module.exports = function(grunt) {
 
 
 		/**
-		 * Handle showing errors to the user.
-		 *
-		 * @private
-		 * @param   {string}          error     The error message.
-		 */
-		handleImageErrors = function(error) {
-			grunt.fail.warn(error);
-		},
-
-
-		/**
-		 * Determine if the file is an animated GIF
-		 *
-		 * @private
-		 * @param   {Object}          data      The image data
-		 * @param   {string}          dstPath   The destination path
-		 */
-		isAnimatedGif = function(data, dstPath) {
-			// GIF87 cannot be animated.
-			// data.Delay and Scene can identify an animation GIF
-			if (data.format.toUpperCase() === 'GIF' && data.Delay && data.Scene) {
-				grunt.verbose.warn(dstPath + ' is animated - skipping');
-				return true;
-			}
-		},
-
-
-		/**
-		 * Process the image
-		 *
-		 * @private
-		 * @param   {srcPath}         count     The source path
-		 * @param   {string}          dstPath   The destination path
-		 * @param   {Object}          options   Options
-		 * @param   {int}             width     Width
-		 */
-		processImage = function(srcPath, dstPath, options, width) {
-			var deferred = q.defer();
-
-			// determine the image type by looking at the file extension
-			// TODO: do this better, maybe with something like <https://github.com/mscdex/mmmagic>
-			var extName = path.extname(dstPath).toLowerCase();
-
-			// if it’s an SVG, generate a PNG using PhantomJS
-			if (extName === '.svg') {
-
-				// make the destination file a PNG
-				dstPath = dstPath.replace(/\.svg$/i, '.png');
-				extName = '.png';
-
-				var spawn = grunt.util.spawn(
-					{
-						cmd :	phantomjs.path,
-						args :	[
-								path.resolve(__dirname, 'lib/svg2png.js'),
-								srcPath,
-								dstPath,
-								width
-						]
-					},
-					function doneFunction(error, result, code) {
-						if (error) {
-							return deferred.reject();
-						}
-					}
-				);
-
-				spawn.stdout.on('data', function(buffer) {
-					try {
-						var result = JSON.parse(buffer.toString());
-						if (result.status) {
-
-							// TODO: send these through ImageMagick to make them not huge?
-
-							grunt.verbose.ok('Resized image: ' + srcPath + ' resized to ' + width + 'px wide, saved to ' + dstPath);
-							return deferred.resolve(true);
-						} else {
-							return deferred.reject();
-						}
-					} catch (error) {
-						handleImageErrors(error);
-						return deferred.reject(error);
-					}
-				});
-
-
-			// all other images get loaded into ImageMagick
-			} else {
-				// get properties about the image
-				im.identify(srcPath, function(error, data) {
-
-					// bail if there’s an error
-					if (error) {
-						handleImageErrors(error);
-						return deferred.reject(error);
-					}
-
-					// bail if it’s an animated GIF
-					// TODO: this isn’t working
-					if (isAnimatedGif(data, dstPath)) {
-						return deferred.resolve(true);
-					}
-
-					var args = [srcPath];
-
-					// set the resize filter
-					if (options.filter !== null) {
-						args.push('-filter');
-						args.push(options.filter);
-					}
-
-					// set the filter support
-					if (options.filterSupport !== null) {
-						args.push('-define');
-						args.push('filter:support=' + options.filterSupport);
-					}
-
-					// set the resize function
-					if (options.resizeFunction !== null) {
-						args.push('-' + options.resizeFunction);
-					}
-
-					// set the width
-					args.push(width);
-
-					// set the unsharp mask
-					if (options.unsharp.radius !== null &&
-						options.unsharp.sigma !== null &&
-						options.unsharp.gain !== null &&
-						options.unsharp.threshold !== null) {
-						args.push('-unsharp');
-						args.push(options.unsharp.radius + 'x' + options.unsharp.sigma + '+' + options.unsharp.gain + '+' + options.unsharp.threshold);
-					} else if (options.unsharp.radius !== null &&
-						options.unsharp.sigma !== null &&
-						options.unsharp.gain !== null) {
-						args.push('-unsharp');
-						args.push(options.unsharp.radius + 'x' + options.unsharp.sigma + '+' + options.unsharp.gain);
-					} else if (options.unsharp.radius !== null &&
-						options.unsharp.sigma !== null) {
-						args.push('-unsharp');
-						args.push(options.unsharp.radius + 'x' + options.unsharp.sigma);
-					} else if (options.unsharp.radius !== null) {
-						args.push('-unsharp');
-						args.push(options.unsharp.radius);
-					}
-
-					// set the dither
-					if (options.dither !== null) {
-						if (options.dither === 'plus') {
-							args.push('+dither');
-						} else {
-							args.push('-dither');
-							args.push(options.dither);
-						}
-					}
-
-					// set posterize
-					if (options.posterize !== null) {
-						args.push('-posterize');
-						args.push(options.posterize);
-					}
-
-					// set background
-					if (options.background !== null) {
-						args.push('-background');
-						args.push(options.background);
-					}
-
-					// set alpha
-					if (options.alpha !== null) {
-						args.push('-alpha');
-						args.push(options.alpha);
-					}
-
-					// set the quality
-					if (options.quality !== null) {
-						args.push('-quality');
-						args.push(options.quality);
-					}
-
-					// set pngPreserveColormap
-					if (options.pngPreserveColormap === true) {
-						args.push('-define');
-						args.push('png:preserve-colormap=true');
-					}
-
-					// set jpegFancyUpsampling
-					if (options.jpegFancyUpsampling !== null) {
-						args.push('-define');
-						args.push('jpeg:fancy-upsampling=' + options.jpegFancyUpsampling);
-					}
-
-					// set pngCompressionFilter
-					if (options.pngCompressionFilter !== null) {
-						args.push('-define');
-						args.push('png:compression-filter=' + options.pngCompressionFilter);
-					}
-
-					// set pngCompressionLevel
-					if (options.pngCompressionLevel !== null) {
-						args.push('-define');
-						args.push('png:compression-level=' + options.pngCompressionLevel);
-					}
-
-					// set pngCompressionStrategy
-					if (options.pngCompressionStrategy !== null) {
-						args.push('-define');
-						args.push('png:compression-strategy=' + options.pngCompressionStrategy);
-					}
-
-					// set pngExcludeChunk
-					if (options.pngExcludeChunk !== null) {
-						args.push('-define');
-						args.push('png:exclude-chunk=' + options.pngExcludeChunk);
-					}
-
-					// set interlace
-					if (options.interlace !== null) {
-						args.push('-interlace');
-						args.push(options.interlace);
-					}
-
-					// colorspace
-					if (options.colorspace !== null) {
-						args.push('-colorspace');
-						args.push(options.colorspace);
-					}
-
-					// set strip
-					if (options.strip === true) {
-						args.push('-strip');
-					}
-
-					// add output filename
-					args.push(dstPath);
-
-					// do the resizing
-					im.convert(args, function(err, stdout, stderr) {
-						// bail if there’s an error
-						if (err) {
-							handleImageErrors(err);
-							return deferred.reject(error);
-						}
-
-						// output info about the saved image
-						grunt.verbose.ok('Resized image: ' + srcPath + ' resized to ' + width + 'px wide, saved to ' + dstPath);
-						return deferred.resolve(true);
-					});
-				});
-			}
-
-			return deferred.promise;
-		},
-
-
-		/**
 		 * Gets the destination path
 		 *
 		 * @private
 		 * @param   {string}          srcPath   The source path
-		 * @param   {string}          filename  Image Filename
-		 * @param   {object}          options
+		 * @param   {string}          dstPath   The destination path
 		 * @param   {int}             width
-		 * @param   {string}          customDest
-		 * @param   {string}          origCwd
 		 * @return                    The complete path and filename
 		 */
-		getDestination = function(srcPath, dstPath, options, width, customDest, origCwd) {
+		getDestination = function(srcPath, dstPath, width) {
 			var baseName =	'',
 				dirName =	'',
 				extName =	'';
@@ -565,7 +173,68 @@ module.exports = function(grunt) {
 		},
 
 
+		/**
+		 * Ensure the ImageOptim-CLI binary is accessible
+		 * @return {String}
+		 */
+		getPathToImageOptim = function() {
+			return imageOptimPaths.filter(function(imageOptimPath) {
+				return grunt.file.exists(imageOptimPath);
+			})[0];
+		},
 
+
+		/**
+		 * Determine if the file is an animated GIF
+		 *
+		 * @private
+		 * @param   {Object}          data      The image data
+		 * @param   {string}          dstPath   The destination path
+		 */
+		isAnimatedGif = function(data, dstPath) {
+			// GIF87 cannot be animated.
+			// data.delay and scene can identify an animation GIF
+			if (data.format.toUpperCase() === 'GIF' && data.delay && data.scene) {
+				grunt.verbose.warn(dstPath + ' is animated - skipping');
+				return true;
+			}
+		},
+
+
+		/**
+		 * @param  {String[]}  files             Array of paths to files
+		 * @param  {String}    imageOptimPath    Path to imageOptim binary
+		 * @return {Promise}
+		 */
+		optimizeRaster = function(files, imageOptimPath) {
+			var imageOptimCli,
+				deferred = q.defer(),
+				errorMessage = 'ImageOptim-CLI exited with a failure status';
+
+			imageOptimCli = cpSpawn('./imageOptim', ['--quit'], {
+				cwd: imageOptimPath
+			});
+
+			imageOptimCli.stdout.on('data', function(message) {
+				grunt.verbose.ok(String(message || '').replace(/\n+$/, ''));
+			});
+
+			imageOptimCli.on('exit', function(code) {
+				return code === 0 ? deferred.resolve(true) : deferred.reject(new Error(errorMessage));
+			});
+
+			imageOptimCli.stdin.setEncoding('utf8');
+			imageOptimCli.stdin.end(files.join('\n') + '\n');
+
+			return deferred.promise;
+		},
+
+
+		/**
+		 * @param  {String[]}  files             Array of paths to files
+		 * @param  {Object}    options           Options
+		 * @return {Promise}
+		 */
 		optimizeSVG = function(file, options) {
 			// setup the promise and SVGO
 			var deferred =	q.defer(),
@@ -597,18 +266,377 @@ module.exports = function(grunt) {
 
 					// write the file and resolve the promise
 					grunt.file.write(file.dest, result.data);
-					deferred.resolve(srcPath + ' (saved ' + prettyBytes(saved) + ' ' + Math.round(percentage) + '%)');
+					deferred.resolve(srcPath + ' (saved ' + saved + ' bytes — ' + Math.round(percentage) + '%)');
 				}
 			});
 
 			return deferred.promise;
-		}
+		},
+
+
+		/**
+		 * Resize the image
+		 *
+		 * @private
+		 * @param   {string}          srcPath   The source path
+		 * @param   {string}          dstPath   The destination path
+		 * @param   {Object}          options   Options
+		 * @param   {int}             width     Width
+		 */
+		resizeImage = function(srcPath, dstPath, options, width) {
+			var deferred = q.defer();
+
+			// determine the image type by looking at the file extension
+			// TODO: do this better, maybe with something like <https://github.com/mscdex/mmmagic>
+			var extName = path.extname(dstPath).toLowerCase();
+
+			// if it’s an SVG, generate a PNG using PhantomJS
+			if (extName === '.svg') {
+				deferred = resizeSVG(deferred, srcPath, dstPath, width);
+
+			// all other images get loaded into ImageMagick
+			} else {
+				deferred = resizeRaster(deferred, srcPath, dstPath, extName, options, width);
+
+			}
+
+			return deferred.promise;
+		},
+
+
+
+		/**
+		 * Resize a raster image
+		 *
+		 * @private
+		 * @param   {Object}          deferred  The deferred promise
+		 * @param   {string}          srcPath   The source path
+		 * @param   {string}          dstPath   The destination path
+		 * @param   {string}          extName   File extension
+		 * @param   {Object}          options   Options
+		 * @param   {int}             width     Width
+		 */
+		resizeRaster = function(deferred, srcPath, dstPath, extName, options, width) {
+
+			// get properties about the image
+			im.identify(srcPath, function(error, data) {
+
+				// bail if there’s an error
+				if (error) {
+					grunt.fail.warn(error);
+					return deferred.reject(error);
+				}
+
+				// bail if it’s an animated GIF
+				if (extName === '.gif') {
+					if (isAnimatedGif(data, dstPath)) {
+						return deferred.resolve(false);
+					}
+				}
+
+				var args = [srcPath];
+
+				// set the resize filter
+				if (options.filter !== null) {
+					args.push('-filter');
+					args.push(options.filter);
+				}
+
+				// set the filter support
+				if (options.filterSupport !== null) {
+					args.push('-define');
+					args.push('filter:support=' + options.filterSupport);
+				}
+
+				// set the resize function
+				if (options.resizeFunction !== null) {
+					args.push('-' + options.resizeFunction);
+				}
+
+				// set the width
+				args.push(width);
+
+				// set the unsharp mask
+				if (options.unsharp.radius !== null &&
+					options.unsharp.sigma !== null &&
+					options.unsharp.gain !== null &&
+					options.unsharp.threshold !== null) {
+					args.push('-unsharp');
+					args.push(options.unsharp.radius + 'x' + options.unsharp.sigma + '+' + options.unsharp.gain + '+' + options.unsharp.threshold);
+				} else if (options.unsharp.radius !== null &&
+					options.unsharp.sigma !== null &&
+					options.unsharp.gain !== null) {
+					args.push('-unsharp');
+					args.push(options.unsharp.radius + 'x' + options.unsharp.sigma + '+' + options.unsharp.gain);
+				} else if (options.unsharp.radius !== null &&
+					options.unsharp.sigma !== null) {
+					args.push('-unsharp');
+					args.push(options.unsharp.radius + 'x' + options.unsharp.sigma);
+				} else if (options.unsharp.radius !== null) {
+					args.push('-unsharp');
+					args.push(options.unsharp.radius);
+				}
+
+				// set the dither
+				if (options.dither !== null) {
+					if (options.dither === 'plus') {
+						args.push('+dither');
+					} else {
+						args.push('-dither');
+						args.push(options.dither);
+					}
+				}
+
+				// set posterize
+				if (options.posterize !== null) {
+					args.push('-posterize');
+					args.push(options.posterize);
+				}
+
+				// set background
+				if (options.background !== null) {
+					args.push('-background');
+					args.push(options.background);
+				}
+
+				// set alpha
+				if (options.alpha !== null) {
+					args.push('-alpha');
+					args.push(options.alpha);
+				}
+
+				// set the quality
+				if (options.quality !== null) {
+					args.push('-quality');
+					args.push(options.quality);
+				}
+
+				// set pngPreserveColormap
+				if (options.pngPreserveColormap === true) {
+					args.push('-define');
+					args.push('png:preserve-colormap=true');
+				}
+
+				// set jpegFancyUpsampling
+				if (options.jpegFancyUpsampling !== null) {
+					args.push('-define');
+					args.push('jpeg:fancy-upsampling=' + options.jpegFancyUpsampling);
+				}
+
+				// set pngCompressionFilter
+				if (options.pngCompressionFilter !== null) {
+					args.push('-define');
+					args.push('png:compression-filter=' + options.pngCompressionFilter);
+				}
+
+				// set pngCompressionLevel
+				if (options.pngCompressionLevel !== null) {
+					args.push('-define');
+					args.push('png:compression-level=' + options.pngCompressionLevel);
+				}
+
+				// set pngCompressionStrategy
+				if (options.pngCompressionStrategy !== null) {
+					args.push('-define');
+					args.push('png:compression-strategy=' + options.pngCompressionStrategy);
+				}
+
+				// set pngExcludeChunk
+				if (options.pngExcludeChunk !== null) {
+					args.push('-define');
+					args.push('png:exclude-chunk=' + options.pngExcludeChunk);
+				}
+
+				// set interlace
+				if (options.interlace !== null) {
+					args.push('-interlace');
+					args.push(options.interlace);
+				}
+
+				// colorspace
+				if (options.colorspace !== null) {
+					args.push('-colorspace');
+					args.push(options.colorspace);
+				}
+
+				// set strip
+				if (options.strip === true) {
+					args.push('-strip');
+				}
+
+				// add output filename
+				args.push(dstPath);
+
+				// do the resizing
+				im.convert(args, function(err, stdout, stderr) {
+					// bail if there’s an error
+					if (err) {
+						grunt.fail.warn(error);
+						return deferred.reject(error);
+					}
+
+					// output info about the saved image
+					grunt.verbose.ok('Resized image: ' + srcPath + ' resized to ' + width + 'px wide, saved to ' + dstPath);
+					return deferred.resolve(true);
+				});
+			});
+
+			return deferred;
+
+		},
+
+
+
+		/**
+		 * Resize an SVG image
+		 *
+		 * @private
+		 * @param   {Object}          deferred  The deferred promise
+		 * @param   {string}          srcPath   The source path
+		 * @param   {string}          dstPath   The destination path
+		 * @param   {int}             width     Width
+		 */
+		resizeSVG = function(deferred, srcPath, dstPath, width) {
+
+			// make the destination file a PNG
+			dstPath = dstPath.replace(/\.svg$/i, '.png');
+
+			// spawn a phantomjs instance to show the SVG and render the output as an image
+			var spawn = grunt.util.spawn(
+				{
+					cmd :	phantomjs.path,
+					args :	[
+							path.resolve(__dirname, 'lib/svg2png.js'),
+							srcPath,
+							dstPath,
+							width
+					]
+				},
+				function doneFunction(error, result, code) {
+					if (error) {
+						return deferred.reject();
+					}
+				}
+			);
+
+			// once phantomjs is done it will output a status
+			// we capture this and use it to verify that the render was successful
+			spawn.stdout.on('data', function(buffer) {
+				try {
+					var result = JSON.parse(buffer.toString());
+					if (result.status) {
+
+						// TODO: send these through ImageMagick to make them not huge?
+
+						grunt.verbose.ok('Resized image: ' + srcPath + ' resized to ' + width + 'px wide, saved to ' + dstPath);
+						return deferred.resolve(true);
+					} else {
+						return deferred.reject();
+					}
+				} catch (error) {
+					grunt.fail.warn(error);
+					return deferred.reject(error);
+				}
+			});
+
+			return deferred;
+
+		},
+
+
+		/**
+		 * Check that there is only one source file in compact/files object format.
+		 *
+		 * @private
+		 * @param   {object}          files         The files object
+		 */
+		validateSource = function(files) {
+			// more than 1 source.
+			if (files.src.length > 1) {
+				return grunt.fail.warn('Unable to resize more than one image in compact or files object format.\n'+
+				'For multiple files please use the files array format.\nSee http://gruntjs.com/configuring-tasks');
+			}
+		},
+
+
+		/**
+		 * Checks for a valid array, and that there are items in the array.
+		 *
+		 * @private
+		 * @param   {object}          obj       The object to check
+		 * @return  {boolean}         Whether it is a valid array with items.
+		 */
+		validateArray = function(obj) {
+			return (Array.isArray(obj) && obj.length > 0);
+		},
+
+
+		/**
+		 * Checks for a valid quality
+		 *
+		 * @private
+		 * @param   {int}             quality     The quality, a value from 1–100
+		 * @return  {boolean}         Whether the quality is valid.
+		 */
+		validateQuality = function(quality) {
+			if (quality < 1 || quality > 100) {
+				return false;
+			}
+
+			return true;
+		},
+
+
+		/**
+		 * Check the target has been set up properly in Grunt.
+		 * Graceful handling of https://github.com/andismith/grunt-responsive-images/issues/2
+		 *
+		 * @private
+		 * @param   {object}          files         The files object
+		 */
+		validateTarget = function(files) {
+			var test;
+
+			try {
+				test = files.src;
+			} catch (exception) {
+				grunt.fail.fatal('Unable to read configuration.\n' +
+				'Have you specified a target? See: http://gruntjs.com/configuring-tasks');
+			}
+		},
+
+
+		/**
+		 * Checks for a valid width
+		 *
+		 * @private
+		 * @param   {int}             width     The width as a number of pixels
+		 * @return  {boolean}         Whether the size is valid.
+		 */
+		validateWidth = function(width) {
+			var pxRegExp =	/^[0-9]+$/,
+				isValid =	false;
+
+			if (width) {
+				// check if we have a valid pixel value
+				if (!!(width || 0).toString().match(pxRegExp)) {
+					isValid = true;
+				} else {
+					grunt.log.error('Width value is not valid.');
+				}
+
+			} else {
+				grunt.log.error('Width must be specified.');
+			}
+
+			return isValid;
+		};
 
 
 
 
 
-	// let's get this party started
+	// let’s get this party started
 	grunt.registerMultiTask('respimg', 'Automatically resizes image assets.', function() {
 		var task = this;
 
@@ -632,26 +660,26 @@ module.exports = function(grunt) {
 		}
 
 		grunt.verbose.writeln('Real options: ');
-		grunt.verbose.writeln(JSON.stringify(options));
+		grunt.verbose.ok(JSON.stringify(options));
 
 		// now some setup
-		var done =			this.async(),
-			i =				0,
-			series =		[],
-			task =			this,
-			promise =		q(),
-			promise2 =		q(),
-			cliPath =		getPathToCli(),
-			outputFiles = 	[],
-			totalSaved =	0;
+		var done =				this.async(),
+			i =					0,
+			series =			[],
+			task =				this,
+			promise =			q(),
+			promise2 =			q(),
+			imageOptimPath =	getPathToImageOptim(),
+			outputFiles = 		[],
+			totalSaved =		0;
 
 		// make sure valid sizes have been defined
-		if (!isValidArray(options.widths)) {
+		if (!validateArray(options.widths)) {
 			return grunt.fail.fatal('No widths have been defined.');
 		}
 
 		// make sure ImageOptim is available
-		if (!cliPath) {
+		if (!imageOptimPath) {
 			return grunt.fail.fatal('Unable to locate ImageOptim-CLI.');
 		}
 
@@ -663,7 +691,7 @@ module.exports = function(grunt) {
 				grunt.verbose.writeln('Validating options…');
 
 				// make sure quality is valid
-				if (!isValidQuality(options.quality)) {
+				if (!validateQuality(options.quality)) {
 					return grunt.log.warn('Quality is invalid (' + options.quality + '). Make sure it’s a value between 0 and 100.');
 				}
 
@@ -674,11 +702,18 @@ module.exports = function(grunt) {
 
 				// make sure the widths are valid
 				async.each(options.widths, function(width, callback2) {
-					if (!isValidWidth(width)) {
+					if (!validateWidth(width)) {
 						return grunt.log.warn('Width is invalid (' + width + '). Make sure it’s an integer.');
 					}
 					callback2(null);
 				}, callback);
+
+				// loop through each input
+				async.each(task.files, function(file, callback2) {
+					// make sure we have a valid target and source
+					validateTarget(file);
+					validateSource(file);
+				});
 
 				// TODO: validate more options
 
@@ -704,7 +739,7 @@ module.exports = function(grunt) {
 						// and continue onwards
 						promise.done(function(results) {
 							if (results) {
-								grunt.verbose.writeln(results);
+								grunt.verbose.ok(results);
 							}
 							callback2(null);
 						});
@@ -744,7 +779,7 @@ module.exports = function(grunt) {
 						grunt.log.writeln('Optimizing raster inputs…');
 
 						// do the optimizations (with promises)
-						promise = processFiles(rasterFiles, cliPath);
+						promise = optimizeRaster(rasterFiles, imageOptimPath);
 						promise.done(function() {
 							callback(null);
 						});
@@ -770,30 +805,28 @@ module.exports = function(grunt) {
 					// loop through each input
 					async.each(task.files, function(file, callback3) {
 
-						// make sure we have a valid target and source
-						checkForValidTarget(file);
-						checkForSingleSource(file);
-
 						// set the source and destination
 						var srcPath =	file.src[0],
-							dstPath =	getDestination(srcPath, file.dest, options, width, file.custom_dest, file.orig.cwd);
+							dstPath =	getDestination(srcPath, file.dest, width);
 
 						// process the image with a promise
 						var promise2 = q();
-						promise2 = processImage(srcPath, dstPath, options, width);
+						promise2 = resizeImage(srcPath, dstPath, options, width);
 
 						// once the image has been processed
-						promise2.done(function() {
+						promise2.done(function(results) {
 
-							// if it’s an SVG, make sure we record that the output was a PNG
-							var extName = path.extname(dstPath).toLowerCase();
-							if (extName === '.svg') {
-								dstPath = dstPath.replace(/\.svg$/i, '.png');
-								extName = '.png';
+							if (results) {
+								// if it’s an SVG, make sure we record that the output was a PNG
+								var extName = path.extname(dstPath).toLowerCase();
+								if (extName === '.svg') {
+									dstPath = dstPath.replace(/\.svg$/i, '.png');
+									extName = '.png';
+								}
+
+								// record the output path for optimization
+								outputFiles.push(dstPath);
 							}
-
-							// record the output path for optimization
-							outputFiles.push(dstPath);
 
 							callback3(null);
 
@@ -823,7 +856,7 @@ module.exports = function(grunt) {
 						grunt.log.writeln('Optimizing raster resized images…');
 
 						// do the optimizations (with promises)
-						promise = processFiles(outputFiles, cliPath);
+						promise = optimizeRaster(outputFiles, imageOptimPath);
 						promise.done(function() {
 							callback(null);
 						});
