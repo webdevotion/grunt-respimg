@@ -53,13 +53,13 @@ You should probably use the default options. They are designed to produce images
 
 Type: `String` or `null`  
 Possible values: `null`, `Activate`, `Associate`, `Background`, `Copy`, `Deactivate`, `Disassociate`, `Extract`, `Off`, `On`, `Opaque`, `Remove`, `Set`, `Shape`, `Transparent`  
-Default value: `null`
+Default value: `null`  
 No-optim default value: `Background`
 
 > Gives control of the alpha/matte channel of an image.  
 > – [ImageMagick: Command-line Options (alpha)](http://www.imagemagick.org/script/command-line-options.php#alpha)
 
-#### background
+#### options.background
 
 Type: `String` or `null`  
 Possible values: `null` or an [ImageMagick-compatible color](http://www.imagemagick.org/script/color.php)  
@@ -69,7 +69,7 @@ No-optim default value: `Black`
 > Set the background color.  
 > – [ImageMagick: Command-line Options (background)](http://www.imagemagick.org/script/command-line-options.php#background)
 
-#### colorspace
+#### options.colorspace
 
 Type: `String` or `null`  
 Possible values: `null`, `CMY`, `CMYK`, `Gray`, `HCL`, `HCLp`, `HSB`, `HSI`, `HSL`, `HSV`, `HWB`, `Lab`, `LCHab`, `LCHuv`, `LMS`, `Log`, `Luv`, `OHTA`, `Rec601YCbCr`, `Rec709YCbCr`, `RGB`, `scRGB`, `sRGB`, `Transparent`, `xyY`, `XYZ`, `YCbCr`, `YCC`, `YDbDr`, `YIQ`, `YPbPr`, `YUV`   
@@ -79,7 +79,7 @@ No-optim default value: `sRGB`
 > Set the image colorspace.  
 > – [ImageMagick: Command-line Options (colorspace)](http://www.imagemagick.org/script/command-line-options.php#colorspace)
 
-#### dither
+#### options.dither
 
 Type: `String` or `null`  
 Possible values: `null`, `FloydSteinberg`, `None`, `plus`, `Riemersma`   
@@ -88,7 +88,7 @@ Default value: `None`
 > Apply a Riemersma or Floyd-Steinberg error diffusion dither to images when general color reduction is applied via an option, or automagically when saving to specific formats.  
 > – [ImageMagick: Command-line Options (dither)](http://www.imagemagick.org/script/command-line-options.php#dither)
 
-#### filter
+#### options.filter
 
 Type: `String` or `null`  
 Possible values: `null`, `Bartlett`, `Bessel`, `Blackman`, `Bohman`, `Box`, `Catrom`, `Cosine`, `Cubic`, `Gaussian`, `Hamming`, `Hann`, `Hanning`, `Hermite`, `Jinc`, `Kaiser`, `Lagrange`, `Lanczos`, `Lanczos2`, `Lanczos2Sharp`, `LanczosRadius`, `LanczosSharp`, `Mitchell`, `Parzen`, `Point`, `Quadratic`, `Robidoux`, `RobidouxSharp`, `Sinc`, `SincFast`, `Spline`, `Triangle`, `Welch`, `Welsh`   
@@ -97,16 +97,7 @@ Default value: `Triangle`
 > Use this *type* of filter when resizing or distorting an image.  
 > – [ImageMagick: Command-line Options (filter)](http://www.imagemagick.org/script/command-line-options.php#filter)
 
-#### filter
-
-Type: `String` or `null`  
-Possible values: `null`, `Bartlett`, `Bessel`, `Blackman`, `Bohman`, `Box`, `Catrom`, `Cosine`, `Cubic`, `Gaussian`, `Hamming`, `Hann`, `Hanning`, `Hermite`, `Jinc`, `Kaiser`, `Lagrange`, `Lanczos`, `Lanczos2`, `Lanczos2Sharp`, `LanczosRadius`, `LanczosSharp`, `Mitchell`, `Parzen`, `Point`, `Quadratic`, `Robidoux`, `RobidouxSharp`, `Sinc`, `SincFast`, `Spline`, `Triangle`, `Welch`, `Welsh`   
-Default value: `Triangle`  
-
-> Use this *type* of filter when resizing or distorting an image.  
-> – [ImageMagick: Command-line Options (filter)](http://www.imagemagick.org/script/command-line-options.php#filter)
-
-#### filterSupport
+#### options.filterSupport
 
 Type: `float` or `null`  
 Default value: `2`  
@@ -114,7 +105,7 @@ Default value: `2`
 > Set the filter support radius. Defines how large the filter should be and thus directly defines how slow the filtered resampling process is. All filters have a default 'prefered' support size. Some filters like `Lagrange` and windowed filters adjust themselves depending on this value. With simple filters this value either does nothing (but slow the resampling), or will clip the filter function in a detrimental way.  
 > – [ImageMagick: Command-line Options (filter)](http://www.imagemagick.org/script/command-line-options.php#filter)
 
-#### interlace
+#### options.interlace
 
 Type: `String` or `null`  
 Possible values: `null`, `GIF`, `JPEG`, `line`, `none`, `partition`, `plane`, `PNG`   
@@ -123,7 +114,7 @@ Default value: `Triangle`
 > the type of interlacing scheme.  
 > – [ImageMagick: Command-line Options (interlace)](http://www.imagemagick.org/script/command-line-options.php#interlace)
 
-#### jpegFancyUpsampling
+#### options.jpegFancyUpsampling
 
 Type: `String` or `null`  
 Possible values: `null`, `off`, `on`   
@@ -132,32 +123,32 @@ No-optim default value: `off`
 
 [ImageMagick: Command-line Options (define)](http://www.imagemagick.org/script/command-line-options.php#define)
 
-#### optimize
+#### options.optimize
 
 Type: `object`  
 
-##### optimize.svg
+##### options.optimize.svg
 
 Type: `boolean`  
 Default value: `true`  
 
 Whether to optimize SVG files.
 
-##### optimize.rasterInput
+##### options.optimize.rasterInput
 
 Type: `boolean`  
 Default value: `true`  
 
 Whether to optimize input raster images (e.g. PNGs, JPEGs, GIFs).
 
-##### optimize.rasterOutput
+##### options.optimize.rasterOutput
 
 Type: `boolean`  
 Default value: `true`  
 
 Whether to optimize output/resized raster images (e.g. PNGs, JPEGs, GIFs).
 
-#### pngCompressionFilter
+#### options.pngCompressionFilter
 
 Type: `int` or `null`  
 Possible values: `null`, `0`–`9`   
@@ -167,7 +158,7 @@ No-optim default value: `5`
 > valid values are 0 through 9. 0-4 are the corresponding PNG filters, 5 means adaptive filtering except for images with a colormap, 6 means adaptive filtering for all images, 7 means MNG "loco" compression, 8 means Z_RLE strategy with adaptive filtering, and 9 means Z_RLE strategy with no filtering.  
 > – [ImageMagick: Command-line Options (define)](http://www.imagemagick.org/script/command-line-options.php#define)
 
-#### pngCompressionLevel
+#### options.pngCompressionLevel
 
 Type: `int` or `null`  
 Possible values: `null`, `0`–`9`   
@@ -177,7 +168,7 @@ No-optim default value: `9`
 > valid values are 0 through 9, with 0 providing the least but fastest compression and 9 usually providing the best and always the slowest.  
 > – [ImageMagick: Command-line Options (define)](http://www.imagemagick.org/script/command-line-options.php#define)
 
-#### pngCompressionStrategy
+#### options.pngCompressionStrategy
 
 Type: `int` or `null`  
 Possible values: `null`, `0`–`9`   
@@ -187,7 +178,7 @@ No-optim default value: `1`
 > valid values are 0 through 4, meaning default, filtered, huffman_only, rle, and fixed ZLIB compression strategy. If you are using an old zlib that does not support Z_RLE (before 1.2.0) or Z_FIXED (before 1.2.2.2), values 3 and 4, respectively, will use the zlib default strategy instead.  
 > – [ImageMagick: Command-line Options (define)](http://www.imagemagick.org/script/command-line-options.php#define)
 
-#### pngExcludeChunk
+#### options.pngExcludeChunk
 
 Type: `String` or `null`  
 Possible values: `null`, `all`, `date`, `none`, or the name(s) of chunk(s) to be excluded   
@@ -200,7 +191,7 @@ No-optim default value: `all`
 > 
 > – [ImageMagick: Command-line Options (define)](http://www.imagemagick.org/script/command-line-options.php#define)
 
-#### pngPreserveColormap
+#### options.pngPreserveColormap
 
 Type: `Boolean` or `null`  
 Default value: `true`  
@@ -208,7 +199,7 @@ Default value: `true`
 > Use the existing image->colormap. Normally the PNG encoder will try to optimize the palette, eliminating unused entries and putting the transparent colors first. If this flag is set, that behavior is suppressed.  
 > – [ImageMagick: Command-line Options (define)](http://www.imagemagick.org/script/command-line-options.php#define)
 
-#### posterize
+#### options.posterize
 
 Type: `int` or `null`  
 Default value: `136`  
@@ -216,7 +207,7 @@ Default value: `136`
 > reduce the image to a limited number of color levels per channel.  
 > – [ImageMagick: Command-line Options (posterize)](http://www.imagemagick.org/script/command-line-options.php#posterize)
 
-#### quality
+#### options.quality
 
 Type: `int` or `null`  
 Possible values: `null`, `0`–`100`   
@@ -225,7 +216,7 @@ Default value: `82`
 > JPEG/MIFF/PNG compression level.  
 > – [ImageMagick: Command-line Options (quality)](http://www.imagemagick.org/script/command-line-options.php#quality)
 
-#### resizeFunction
+#### options.resizeFunction
 
 Type: `String` or `null`  
 Possible values: `null`, `adaptive`, `distort`, `geometry`, `interpolative`, `liquid`, `resize`, `sample`, `scale`, `thumbnail`   
@@ -250,7 +241,7 @@ Default value: `thumbnail`
 * > **-thumbnail** … Create a thumbnail of the image.  
 > – [ImageMagick: Command-line Options (thumbnail)](http://www.imagemagick.org/script/command-line-options.php#thumbnail)
 
-#### strip
+#### options.strip
 
 Type: `Boolean` or `null`  
 Default value: `null`  
@@ -259,7 +250,7 @@ No-optim default value: `true`
 > strip the image of any profiles or comments.  
 > – [ImageMagick: Command-line Options (strip)](http://www.imagemagick.org/script/command-line-options.php#strip)
 
-#### svgoPlugins
+#### options.svgoPlugins
 
 Type: `Object[]`  
 Default value: `[ { removeUnknownsAndDefaults : false } ]`  
@@ -270,14 +261,14 @@ Default value: `[ { removeUnknownsAndDefaults : false } ]`
 >   
 > – [grunt-svgmin readme.md](https://github.com/sindresorhus/grunt-svgmin/blob/master/readme.md)
 
-#### unsharp
+#### options.unsharp
 
 Type: `object`  
 
 > sharpen the image with an unsharp mask operator.  
 > – [ImageMagick: Command-line Options (unsharp)](http://www.imagemagick.org/script/command-line-options.php#unsharp)
 
-##### unsharp.radius
+##### options.unsharp.radius
 
 Type: `float` or `null`  
 Default value: `0.25`  
@@ -285,7 +276,7 @@ Default value: `0.25`
 > The radius of the Gaussian, in pixels,  not counting the center   
 > – [ImageMagick: Command-line Options (unsharp)](http://www.imagemagick.org/script/command-line-options.php#unsharp)
 
-##### unsharp.sigma
+##### options.unsharp.sigma
 
 Type: `float` or `null`  
 Default value: `0.25`  
@@ -293,7 +284,7 @@ Default value: `0.25`
 > The standard deviation of the Gaussian, in pixels   
 > – [ImageMagick: Command-line Options (unsharp)](http://www.imagemagick.org/script/command-line-options.php#unsharp)
 
-##### unsharp.gain
+##### options.unsharp.gain
 
 Type: `float` or `null`  
 Default value: `9`  
@@ -301,7 +292,7 @@ Default value: `9`
 > The fraction of the difference between the original and the blur image that is added back into the original   
 > – [ImageMagick: Command-line Options (unsharp)](http://www.imagemagick.org/script/command-line-options.php#unsharp)
 
-##### unsharp.threshold
+##### options.unsharp.threshold
 
 Type: `float` or `null`  
 Default value: `0.045`  
@@ -310,7 +301,7 @@ No-optim default value: `0.065`
 > The threshold, as a fraction of *QuantumRange*, needed to apply the difference amount   
 > – [ImageMagick: Command-line Options (unsharp)](http://www.imagemagick.org/script/command-line-options.php#unsharp)
 
-#### widths
+#### options.widths
 
 Type: `int[]`  
 Default value: `[ 320, 640, 1280 ]`  
