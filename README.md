@@ -349,8 +349,6 @@ If `src/img/` contained four files — `testGif.gif`, `testJpeg.jpg`, `testPng.p
 
 You probably don’t really want to use the default widths. You should widths that make sense for your project.
 
-In this example, the default options are used to do resize images to 320px, 640px, and 1280px wide.
-
 ```js
 grunt.initConfig({
 	respimg: {
