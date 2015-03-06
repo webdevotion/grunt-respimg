@@ -1,8 +1,16 @@
 # grunt-respimg
 
-> A responsive image workflow for optimizing and resizing your images
+**A responsive image workflow for optimizing and resizing your images.**
 
-Heavily indebted to (and portions borrowed liberally from):
+This plugin will:
+
+* Efficiently resize PNGs, JPEGs, and non-animated GIFs to widths that you specify
+* Rasterize SVGs to PNGs at widths that you specify
+* Optimize all your input and output images (PNGs, JPEGs, GIFs, and SVGs)
+
+The output images should be visually indistinguishable from those output by Photoshop’s *Save for web…*, but with smaller average file sizes.
+
+This plugin is heavily indebted to (and has portions borrowed liberally from):
 
 * [grunt-responsive-images](https://github.com/andismith/grunt-responsive-images),
 * [grunt-svg2png](https://github.com/dbushell/grunt-svg2png),
@@ -14,7 +22,7 @@ Heavily indebted to (and portions borrowed liberally from):
 
 This plugin requires Grunt `~0.4.5`
 
-If you haven't used [Grunt](http://gruntjs.com/) before, be sure to check out the [Getting Started](http://gruntjs.com/getting-started) guide, as it explains how to create a [Gruntfile](http://gruntjs.com/sample-gruntfile) as well as install and use Grunt plugins. Once you're familiar with that process, you may install this plugin with this command:
+If you haven’t used [Grunt](http://gruntjs.com/) before, be sure to check out the [Getting Started](http://gruntjs.com/getting-started) guide, as it explains how to create a [Gruntfile](http://gruntjs.com/sample-gruntfile) as well as install and use Grunt plugins. Once you’re familiar with that process, you may install this plugin with this command:
 
 ```shell
 npm install grunt-respimg --save-dev
@@ -26,11 +34,13 @@ Once the plugin has been installed, it may be enabled inside your Gruntfile with
 grunt.loadNpmTasks('grunt-respimg');
 ```
 
-## The "respimg" task
+For image optimization, you’ll need to install [ImageOptim](https://imageoptim.com/).
+
+## The “respimg” task
 
 ### Overview
 
-In your project's Gruntfile, add a section named `respimg` to the data object passed into `grunt.initConfig()`.
+In your project’s Gruntfile, add a section named `respimg` to the data object passed into `grunt.initConfig()`.
 
 ```js
 grunt.initConfig({
@@ -45,9 +55,20 @@ grunt.initConfig({
 });
 ```
 
-### Options
+### Options you should care about
 
-You should probably use the default options. They are designed to produce images that are generally visually indistinguishable from Photoshop’s `Save for web…`, but at a smaller file size.
+The only option you should really care about setting is `widths`:
+
+#### options.widths
+
+Type: `int[]`  
+Default value: `[ 320, 640, 1280 ]`  
+
+The widths that images should be resized to.
+
+### Options you probably don’t need to care about
+
+For the most part, you should probably use the default options. They are designed to produce images that are generally visually indistinguishable from Photoshop’s *Save for web…*, but at a smaller file size.
 
 #### options.alpha
 
@@ -102,7 +123,7 @@ Default value: `Triangle`
 Type: `float` or `null`  
 Default value: `2`  
 
-> Set the filter support radius. Defines how large the filter should be and thus directly defines how slow the filtered resampling process is. All filters have a default 'prefered' support size. Some filters like `Lagrange` and windowed filters adjust themselves depending on this value. With simple filters this value either does nothing (but slow the resampling), or will clip the filter function in a detrimental way.  
+> Set the filter support radius. Defines how large the filter should be and thus directly defines how slow the filtered resampling process is. All filters have a default ‘prefered’ support size. Some filters like `Lagrange` and windowed filters adjust themselves depending on this value. With simple filters this value either does nothing (but slow the resampling), or will clip the filter function in a detrimental way.  
 > – [ImageMagick: Command-line Options (filter)](http://www.imagemagick.org/script/command-line-options.php#filter)
 
 #### options.interlace
@@ -301,13 +322,6 @@ No-optim default value: `0.065`
 > The threshold, as a fraction of *QuantumRange*, needed to apply the difference amount   
 > – [ImageMagick: Command-line Options (unsharp)](http://www.imagemagick.org/script/command-line-options.php#unsharp)
 
-#### options.widths
-
-Type: `int[]`  
-Default value: `[ 320, 640, 1280 ]`  
-
-The widths that images should be resized to.
-
 ### Usage Examples
 
 #### Default Options
@@ -387,6 +401,11 @@ If `src/img/` contained four files — `testGif.gif`, `testJpeg.jpg`, `testPng.p
 In lieu of a formal styleguide, take care to maintain the existing coding style. Add unit tests for any new or changed functionality. Lint and test your code using [Grunt](http://gruntjs.com/).
 
 ## Release History
+
+### 0.1.0
+
+* README changes
+* Publish with npm
 
 ### 0.0.1
 
