@@ -8,7 +8,7 @@ This plugin will:
 * Rasterize SVGs to PNGs at widths that you specify
 * Optimize all your input and output images (PNGs, JPEGs, GIFs, and SVGs)
 
-The output images should be visually indistinguishable from those output by Photoshop’s *Save for web…*, but with smaller average file sizes.
+The output images should be visually indistinguishable from those output by Photoshop’s *Save for Web…*, but with smaller average file sizes.
 
 This plugin is heavily indebted to (and has portions borrowed liberally from):
 
@@ -20,7 +20,7 @@ This plugin is heavily indebted to (and has portions borrowed liberally from):
 
 ## Getting Started
 
-This plugin requires Grunt `~0.4.5`
+This plugin requires Grunt `~0.4.5`.
 
 If you haven’t used [Grunt](http://gruntjs.com/) before, be sure to check out the [Getting Started](http://gruntjs.com/getting-started) guide, as it explains how to create a [Gruntfile](http://gruntjs.com/sample-gruntfile) as well as install and use Grunt plugins. Once you’re familiar with that process, you may install this plugin with this command:
 
@@ -68,7 +68,7 @@ The widths that images should be resized to.
 
 ### Options you probably don’t need to care about
 
-For the most part, you should probably use the default options. They are designed to produce images that are generally visually indistinguishable from Photoshop’s *Save for web…*, but at a smaller file size.
+For the most part, you should probably use the default options. They are designed to produce images that are generally visually indistinguishable from Photoshop’s *Save for Web…*, but at a smaller file size.
 
 #### options.alpha
 
@@ -252,7 +252,7 @@ Default value: `thumbnail`
 * > **-interpolative-resize** … The "`-interpolative-resize`" operator is practically identical to the previous Adaptive Resize operator. However this operator will use the current "`-interpolate`" setting rather than a fixed 'Mesh' interpolation method.  
 > – [Resize or Scaling -- IM v6 Examples (Interpolative Resize)](http://www.imagemagick.org/Usage/resize/#interpolative-resize)
 * > **-liquid-rescale** … rescale image with seam-carving.  
-> – [ImageMagick: Command-line Options (liquid-rescale)](http://www.imagemagick.org/script/command-line-options.php#liquid-rescale*)
+> – [ImageMagick: Command-line Options (liquid-rescale)](http://www.imagemagick.org/script/command-line-options.php#liquid-rescale)
 * > **-resize** … Resize an image.  
 > – [ImageMagick: Command-line Options (resize)](http://www.imagemagick.org/script/command-line-options.php#resize)
 * > **-sample** … minify / magnify the image with pixel subsampling and pixel replication, respectively.  
@@ -326,7 +326,7 @@ No-optim default value: `0.065`
 
 #### Default Options
 
-In this example, the default options are used to do resize images to 320px, 640px, and 1280px wide.
+In this example, the default options are used to resize images to 320px, 640px, and 1280px wide.
 
 ```js
 grunt.initConfig({
@@ -361,7 +361,7 @@ If `src/img/` contained four files — `testGif.gif`, `testJpeg.jpg`, `testPng.p
 
 #### Custom widths
 
-You probably don’t really want to use the default widths. You should widths that make sense for your project.
+You probably don’t really want to use the default widths. You should use widths that make sense for your project.
 
 ```js
 grunt.initConfig({
