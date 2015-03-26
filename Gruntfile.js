@@ -35,6 +35,22 @@
 					dest: 'tmp/'
 				}]
 			},
+      widthAsDir: {
+        options: {
+          widthAsDir: true
+        },
+				files: [{
+					expand: true,
+					cwd: 'test/assets/',
+					src: ['raster/**.{jpg,gif,png,svg}'],
+					dest: 'tmp/'
+				},{
+					expand: true,
+					cwd: 'test/assets/',
+					src: ['svg/**.{jpg,gif,png,svg}'],
+					dest: 'tmp/'
+				}]
+			},
 			nooptim: {
 				options: {
 					optimize: {
