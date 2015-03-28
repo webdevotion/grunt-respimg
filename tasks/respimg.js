@@ -131,7 +131,7 @@ module.exports = function(grunt) {
 										1280
 			],
 
-      widthsAsDir: false
+      widthAsDir: false
 		},
 
 
