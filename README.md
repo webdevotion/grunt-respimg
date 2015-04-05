@@ -66,6 +66,13 @@ Default value: `[ 320, 640, 1280 ]`
 
 The widths that images should be resized to.
 
+#### options.widthAsDir
+
+Type: `bool`
+Default value: `false`
+
+Save resized images under a directory with the same name of the width instead adding the width to the filename.
+
 ### Options you probably don’t need to care about
 
 For the most part, you should probably use the default options. They are designed to produce images that are generally visually indistinguishable from Photoshop’s *Save for Web…*, but at a smaller file size.

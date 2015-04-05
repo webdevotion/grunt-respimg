@@ -124,6 +124,9 @@ module.exports = function(grunt) {
 				threshold :				0.045
 			},
 
+			// options: true, false
+			widthAsDir :				false,
+
 			// options: (int)s
 			widths : [
 										320,
@@ -156,9 +159,10 @@ module.exports = function(grunt) {
 		 * @param   {string}          srcPath   The source path
 		 * @param   {string}          dstPath   The destination path
 		 * @param   {int}             width
+		 * @param   {Object}          options   Options
 		 * @return                    The complete path and filename
 		 */
-		getDestination = function(srcPath, dstPath, width) {
+		getDestination = function(srcPath, dstPath, width, options) {
 			var baseName =	'',
 				dirName =	'',
 				extName =	'';
@@ -167,9 +171,14 @@ module.exports = function(grunt) {
 			baseName = path.basename(srcPath, extName); // filename without extension
 			dirName = path.dirname(dstPath);
 
-			checkDirectoryExists(path.join(dirName));
-
-			return path.join(dirName, baseName + '-w' + width + extName);
+			if (options.widthAsDir) {
+				dirName = dirName + '/' + width + '/';
+				checkDirectoryExists(path.join(dirName));
+				return path.join(dirName, baseName + extName);
+			} else {
+				checkDirectoryExists(path.join(dirName));
+				return path.join(dirName, baseName + '-w' + width + extName);
+			}
 		},
 
 
@@ -1133,7 +1142,7 @@ module.exports = function(grunt) {
 
 						// set the source and destination
 						var srcPath =	file.src[0],
-							dstPath =	getDestination(srcPath, file.dest, width);
+							dstPath =	getDestination(srcPath, file.dest, width, options);
 
 						// process the image with a promise
 						var promise2 = q();

@@ -34,6 +34,22 @@
 					src: ['svg/**.{jpg,gif,png,svg}'],
 					dest: 'test/generated/default/'
 				}]
+			},
+			widthAsDir: {
+				options: {
+					widthAsDir: true
+				},
+				files: [{
+					expand: true,
+					cwd: 'test/assets/',
+					src: ['raster/**.{jpg,gif,png,svg}'],
+					dest: 'test/generated/widthAsDir/'
+				},{
+					expand: true,
+					cwd: 'test/assets/',
+					src: ['svg/**.{jpg,gif,png,svg}'],
+					dest: 'test/generated/widthAsDir/'
+				}]
 			}
 		},
 
