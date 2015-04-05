@@ -27,95 +27,27 @@
 					expand: true,
 					cwd: 'test/assets/',
 					src: ['raster/**.{jpg,gif,png,svg}'],
-					dest: 'tmp/'
+					dest: 'test/generated/default/'
 				},{
 					expand: true,
 					cwd: 'test/assets/',
 					src: ['svg/**.{jpg,gif,png,svg}'],
-					dest: 'tmp/'
-				}]
-			},
-			nooptim: {
-				options: {
-					optimize: {
-						svg:			false,
-						rasterInput:	false,
-						rasterOutput:	false
-					}
-				},
-				files: [{
-					expand: true,
-					cwd: 'test/assets/',
-					src: ['raster/**.{jpg,gif,png,svg}'],
-					dest: 'tmp/'
-				},{
-					expand: true,
-					cwd: 'test/assets/',
-					src: ['svg/**.{jpg,gif,png,svg}'],
-					dest: 'tmp/'
-				}]
-			},
-			svgoPlugins: {
-				options: {
-					optimize: {
-						svg:			true,
-						rasterInput:	false,
-						rasterOutput:	false
-					},
-
-					svgoPlugins: [
-						{ cleanupAttrs:						false },
-						{ cleanupEnableBackground:			false },
-						{ cleanupIDs:						false },
-						{ cleanupListOfValues:				false },
-						{ cleanupNumericValues:				false },
-						{ collapseGroups:					false },
-						{ convertColors:					false },
-						{ convertPathData:					false },
-						{ convertShapeToPath:				false },
-						{ convertStyleToAttrs:				false },
-						{ convertTransform:					false },
-						{ mergePaths:						false },
-						{ moveElemsAttrsToGroup:			false },
-						{ moveGroupAttrsToElems:			false },
-						{ removeComments:					false },
-						{ removeDesc:						false },
-						{ removeDoctype:					false },
-						{ removeEditorsNSData:				false },
-						{ removeEmptyAttrs:					false },
-						{ removeEmptyContainers:			false },
-						{ removeEmptyText:					false },
-						{ removeHiddenElems:				false },
-						{ removeMetadata:					false },
-						{ removeNonInheritableGroupAttrs:	false },
-						{ removeRasterImages:				false },
-						{ removeTitle:						false },
-						{ removeUnknownsAndDefaults:		false },
-						{ removeUnusedNS:					false },
-						{ removeUselessStrokeAndFill:		false },
-						{ removeViewBox:					false },
-						{ removeXMLProcInst:				false },
-						{ sortAttrs:						false },
-						{ transformsWithOnePath:			false }
-					]
-				},
-				files: [{
-					expand: true,
-					cwd: 'test/assets/',
-					src: ['svg/**.{jpg,gif,png,svg}'],
-					dest: 'tmp/'
+					dest: 'test/generated/default/'
 				}]
 			}
+		},
+
+		// Unit tests.
+		nodeunit: {
+			tests: ['test/**/*_test.js']
 		}
 	});
 
 	// Actually load this plugin's task(s).
 	grunt.loadTasks('tasks');
 
-	// Whenever the "test" task is run, first clean the "tmp" dir, then run this
-	// plugin's task(s), then test the result.
-	grunt.registerTask('test', ['respimg']);
+	grunt.registerTask('default', ['test']);
+	grunt.registerTask('test', ['respimg', 'nodeunit']);
 
-	// By default, lint and run all tests.
-	grunt.registerTask('default', []);
+	grunt.loadNpmTasks('grunt-contrib-nodeunit');
 };
