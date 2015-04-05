@@ -56,7 +56,7 @@ var fs =    require('fs'),
 		// set the image width and height to our output width and newly calculated height
 		img.setAttribute('width', parseFloat(width));
 		img.setAttribute('height', parseFloat(height));
-		img.style.cssText = 'display: block; width: ' + width + 'px; height: ' + height;
+		img.style.cssText = 'display: block; width: ' + width + 'px; height: ' + height + 'px';
 
 		// set the viewport to the size of the image
 		page.viewportSize = {
@@ -65,7 +65,7 @@ var fs =    require('fs'),
 		};
 
 		// open a page containing the image we just created
-		html = 'data:text/html,<!DOCTYPE html><title>svg!</title><body style="padding:0;margin:0">' + img.outerHTML + '</body></html>';
+		html = 'data:text/html,<!DOCTYPE html><title>svg!</title><body style="padding:0;margin:0">' + img.outerHTML + '</body>';
 		page.open(html, function(status) {
 			// render the page to a PNG
 			page.render(dest);
