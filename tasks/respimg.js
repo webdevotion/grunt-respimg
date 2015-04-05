@@ -830,6 +830,12 @@ module.exports = function(grunt) {
 		},
 
 
+		validateWidthAsDir = function(widthAsDir) {
+			var whitelist = [true, false];
+			return validateWhitelist(whitelist, widthAsDir, 'widthAsDir');
+		},
+
+
 		/**
 		 * Checks for valid widths
 		 *
@@ -1032,6 +1038,12 @@ module.exports = function(grunt) {
 					return grunt.fail.fatal('Invalid `unsharp` option');
 				}
 				grunt.verbose.writeln('`unsharp` option OK');
+
+				// make sure widthAsDir is valid
+				if (!validateWidthAsDir(options.widthAsDir)) {
+					return grunt.fail.fatal('Invalid `widthAsDir` option');
+				}
+				grunt.verbose.writeln('`pngPreserveColormap` option OK');
 
 				// make sure the widths are valid
 				if (!validateWidths(options.widths)) {
