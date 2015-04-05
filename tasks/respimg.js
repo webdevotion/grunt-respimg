@@ -304,7 +304,6 @@ module.exports = function(grunt) {
 		},
 
 
-
 		/**
 		 * Resize a raster image
 		 *
@@ -489,7 +488,6 @@ module.exports = function(grunt) {
 		},
 
 
-
 		/**
 		 * Resize an SVG image
 		 *
@@ -547,18 +545,9 @@ module.exports = function(grunt) {
 		},
 
 
-		/**
-		 * Check that there is only one source file in compact/files object format.
-		 *
-		 * @private
-		 * @param   {object}          files         The files object
-		 */
-		validateSource = function(files) {
-			// more than 1 source.
-			if (files.src.length > 1) {
-				return grunt.fail.warn('Unable to resize more than one image in compact or files object format.\n'+
-				'For multiple files please use the files array format.\nSee http://gruntjs.com/configuring-tasks');
-			}
+		validateAlpha = function(alpha) {
+			var whitelist = [null, 'Activate', 'Associate', 'Background', 'Copy', 'Deactivate', 'Disassociate', 'Extract', 'Off', 'On', 'Opaque', 'Remove', 'Set', 'Shape', 'Transparent'];
+			return validateWhitelist(whitelist, alpha, 'alpha');
 		},
 
 
@@ -574,16 +563,206 @@ module.exports = function(grunt) {
 		},
 
 
+		validateBackground = function(background) {
+			// TODO: this is pretty complex… need to figure out a good way to validate
+			return true;
+		},
+
+
+		validateColorspace = function(colorspace) {
+			var whitelist = [null, 'CMY', 'CMYK', 'Gray', 'HCL', 'HCLp', 'HSB', 'HSI', 'HSL', 'HSV', 'HWB', 'Lab', 'LCHab', 'LCHuv', 'LMS', 'Log', 'Luv', 'OHTA', 'Rec601YCbCr', 'Rec709YCbCr', 'RGB', 'scRGB', 'sRGB', 'Transparent', 'xyY', 'XYZ', 'YCbCr', 'YCC', 'YDbDr', 'YIQ', 'YPbPr', 'YUV'];
+			return validateWhitelist(whitelist, colorspace, 'colorspace');
+		},
+
+
+		validateDither = function(dither) {
+			var whitelist = [null, 'FloydSteinberg', 'None', 'plus', 'Riemersma'];
+			return validateWhitelist(whitelist, dither, 'dither');
+		},
+
+
+		validateFilter = function(filter) {
+			var whitelist = [null, 'Bartlett', 'Bessel', 'Blackman', 'Bohman', 'Box', 'Catrom', 'Cosine', 'Cubic', 'Gaussian', 'Hamming', 'Hann', 'Hanning', 'Hermite', 'Jinc', 'Kaiser', 'Lagrange', 'Lanczos', 'Lanczos2', 'Lanczos2Sharp', 'LanczosRadius', 'LanczosSharp', 'Mitchell', 'Parzen', 'Point', 'Quadratic', 'Robidoux', 'RobidouxSharp', 'Sinc', 'SincFast', 'Spline', 'Triangle', 'Welch', 'Welsh'];
+			return validateWhitelist(whitelist, filter, 'filter');
+		},
+
+
+		validateFilterSupport = function(filterSupport) {
+			if (filterSupport !== null && !validateFloat(filterSupport)) {
+				grunt.fail.fatal('Invalid value for filterSupport: ' + filterSupport);
+				return false;
+			}
+			return true;
+		},
+
+
+		validateFloat = function(float) {
+			return (typeof float === 'number' && float >= 0);
+		},
+
+
+		validateInteger = function(int) {
+			return (typeof int === 'number' && (int % 1) === 0 && int >= 0);
+		},
+
+
+		validateInterlace = function(interlace) {
+			var whitelist = [null, 'GIF', 'JPEG', 'line', 'none', 'partition', 'plane', 'PNG'];
+			return validateWhitelist(whitelist, interlace, 'interlace');
+		},
+
+
+		validateJpegFancyUpsampling = function(jpegFancyUpsampling) {
+			var whitelist = [null, 'off', 'on'];
+			return validateWhitelist(whitelist, jpegFancyUpsampling, 'jpegFancyUpsampling');
+		},
+
+
+		validateOptimize = function(optimize) {
+			if (optimize === null || typeof(optimize) !== 'object') {
+				grunt.fail.fatal('Invalid value for optimize: ' + optimize);
+				return false;
+			}
+			if (optimize.svg !== true && optimize.svg !== false) {
+				grunt.fail.fatal('Invalid value for optimize.svg: ' + optimize.svg);
+				return false;
+			}
+			if (optimize.rasterInput !== true && optimize.rasterInput !== false) {
+				grunt.fail.fatal('Invalid value for optimize.rasterInput: ' + optimize.rasterInput);
+				return false;
+			}
+			if (optimize.rasterOutput !== true && optimize.rasterOutput !== false) {
+				grunt.fail.fatal('Invalid value for optimize.rasterOutput: ' + optimize.rasterOutput);
+				return false;
+			}
+			return true;
+		},
+
+
+		validatePngCompressionFilter = function(pngCompressionFilter) {
+			var whitelist = [null, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+			return validateWhitelist(whitelist, pngCompressionFilter, 'pngCompressionFilter');
+		},
+
+
+		validatePngCompressionLevel = function(pngCompressionLevel) {
+			var whitelist = [null, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+			return validateWhitelist(whitelist, pngCompressionLevel, 'pngCompressionLevel');
+		},
+
+
+		validatePngCompressionStrategy = function(pngCompressionStrategy) {
+			var whitelist = [null, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+			return validateWhitelist(whitelist, pngCompressionStrategy, 'pngCompressionStrategy');
+		},
+
+
+		validatePngExcludeChunk = function(pngExcludeChunk) {
+			var whitelist = ['all', 'bkgd', 'chrm', 'date', 'exif', 'gama', 'gama', 'iccp', 'itxt', 'none', 'offs', 'phys', 'srgb', 'text', 'trns', 'vpag', 'zccp', 'ztxt'],
+				exclude,
+				valid = true;
+
+			if (pngExcludeChunk) {
+				exclude = pngExcludeChunk.split(',');
+			}
+
+			if (pngExcludeChunk === null) {
+				return true;
+			}
+
+			var chunk;
+			for (var i in exclude) {
+				chunk = exclude[i];
+				if (chunk.trim) {
+					chunk = chunk.trim()
+				}
+				valid = valid * validateWhitelist(whitelist, chunk, 'validatePngExcludeChunk');
+			}
+
+			return valid;
+		},
+
+
+		validatePngPreserveColormap = function(pngPreserveColormap) {
+			var whitelist = [null, true, false];
+			return validateWhitelist(whitelist, pngPreserveColormap, 'pngPreserveColormap');
+		},
+
+
+		validatePosterize = function(posterize) {
+			if (posterize !== null && !validateInteger(posterize)) {
+				grunt.fail.fatal('Invalid value for posterize: ' + posterize);
+				return false;
+			}
+			return true;
+		},
+
+
 		/**
 		 * Checks for a valid quality
 		 *
 		 * @private
-		 * @param   {int}             quality     The quality, a value from 1–100
+		 * @param   {int}             quality     The quality, a value from 0–100
 		 * @return  {boolean}         Whether the quality is valid.
 		 */
 		validateQuality = function(quality) {
-			if (quality < 1 || quality > 100) {
+			if ((quality !== null && !validateInteger(quality)) || quality > 100) {
+				grunt.fail.fatal('Invalid value for quality: ' + quality);
 				return false;
+			}
+			return true;
+		},
+
+
+		validateResizeFunction = function(resizeFunction) {
+			var whitelist = [null, 'adaptive', 'distort', 'geometry', 'interpolative', 'liquid', 'resize', 'sample', 'scale', 'thumbnail'];
+			return validateWhitelist(whitelist, resizeFunction, 'resizeFunction');
+		},
+
+
+		/**
+		 * Check that there is only one source file in compact/files object format.
+		 *
+		 * @private
+		 * @param   {object}          files         The files object
+		 */
+		validateSource = function(files) {
+			// more than 1 source.
+			if (files.src.length > 1) {
+				return grunt.fail.warn('Unable to resize more than one image in compact or files object format.\n'+
+				'For multiple files please use the files array format.\nSee http://gruntjs.com/configuring-tasks');
+			}
+		},
+
+
+		validateStrip = function(strip) {
+			var whitelist = [null, true, false];
+			return validateWhitelist(whitelist, strip, 'strip');
+		},
+
+
+		validateSvgoPlugins = function(svgoPlugins) {
+			var whitelist = [true, false];
+
+			if (!validateArray(svgoPlugins)) {
+				grunt.fail.fatal('Invalid value for svgoPlugins: ' + svgoPlugins);
+				return false;
+			}
+
+			var i, j, obj, val;
+			for (i in svgoPlugins) {
+				obj = svgoPlugins[i];
+				if (obj === null || typeof(obj) !== 'object') {
+					grunt.fail.fatal('Invalid value for svgoPlugins[' + i + ']: ' + obj);
+					return false;
+				}
+
+				for (j in obj) {
+					val = obj[j];
+					if (!validateWhitelist(whitelist, val, 'svgoPlugins[' + i + '].' + j)) {
+						return false;
+					}
+				}
 			}
 
 			return true;
@@ -599,7 +778,6 @@ module.exports = function(grunt) {
 		 */
 		validateTarget = function(files) {
 			var test;
-
 			try {
 				test = files.src;
 			} catch (exception) {
@@ -609,30 +787,64 @@ module.exports = function(grunt) {
 		},
 
 
+		validateUnsharp = function(unsharp) {
+			if (unsharp === null || typeof(unsharp) !== 'object') {
+				grunt.fail.fatal('Invalid value for unsharp: ' + unsharp);
+				return false;
+			}
+			if (!validateFloat(unsharp.radius)) {
+				grunt.fail.fatal('Invalid value for unsharp.radius: ' + unsharp.radius);
+				return false;
+			}
+			if (!validateFloat(unsharp.sigma)) {
+				grunt.fail.fatal('Invalid value for unsharp.sigma: ' + unsharp.sigma);
+				return false;
+			}
+			if (!validateFloat(unsharp.gain)) {
+				grunt.fail.fatal('Invalid value for unsharp.gain: ' + unsharp.gain);
+				return false;
+			}
+			if (!validateFloat(unsharp.threshold)) {
+				grunt.fail.fatal('Invalid value for unsharp.threshold: ' + unsharp.threshold);
+				return false;
+			}
+			return true;
+		},
+
+
+		validateWhitelist = function(whitelist, value, name) {
+			if (whitelist.indexOf(value) === -1) {
+				grunt.fail.fatal('Invalid value for ' + name + ': ' + value);
+				return false;
+			}
+			return true;
+		},
+
+
 		/**
-		 * Checks for a valid width
+		 * Checks for valid widths
 		 *
 		 * @private
-		 * @param   {int}             width     The width as a number of pixels
-		 * @return  {boolean}         Whether the size is valid.
+		 * @param   {int}             widths     The width as a number of pixels
+		 * @return  {boolean}         Whether the sizes are valid.
 		 */
-		validateWidth = function(width) {
-			var pxRegExp =	/^[0-9]+$/,
-				isValid =	false;
-
-			if (width) {
-				// check if we have a valid pixel value
-				if (!!(width || 0).toString().match(pxRegExp)) {
-					isValid = true;
-				} else {
-					grunt.log.error('Width value is not valid.');
-				}
-
-			} else {
-				grunt.log.error('Width must be specified.');
+		validateWidths = function(widths) {
+			if (!validateArray(widths)) {
+				grunt.fail.fatal('Invalid value for widths: ' + widths);
+				return false;
 			}
 
-			return isValid;
+			var i, width;
+			for (i in widths) {
+				width = widths[i];
+
+				if (!validateInteger(width)) {
+					grunt.fail.fatal('Invalid value for width: ' + width);
+					return false;
+				}
+			}
+
+			return true;
 		};
 
 
@@ -676,16 +888,6 @@ module.exports = function(grunt) {
 			outputFiles = 		[],
 			totalSaved =		0;
 
-		// make sure valid sizes have been defined
-		if (!validateArray(options.widths)) {
-			return grunt.fail.fatal('No widths have been defined.');
-		}
-
-		// make sure ImageOptim is available
-		if (!imageOptimPath) {
-			return grunt.fail.fatal('Unable to locate ImageOptim-CLI.');
-		}
-
 		async.series([
 
 			// do some validation
@@ -693,33 +895,154 @@ module.exports = function(grunt) {
 				// tell the user what we’re doing
 				grunt.verbose.writeln('Validating options…');
 
+				// make sure alpha is valid
+				if (!validateAlpha(options.alpha)) {
+					return grunt.fail.fatal('Invalid `alpha` option');
+				}
+				grunt.verbose.writeln('`alpha` option OK');
+
+				// make sure background is valid
+				if (!validateBackground(options.background)) {
+					return grunt.fail.fatal('Invalid `background` option');
+				}
+				grunt.verbose.writeln('`background` option OK');
+
+				// make sure colorspace is valid
+				if (!validateColorspace(options.colorspace)) {
+					return grunt.fail.fatal('Invalid `colorspace` option');
+				}
+				grunt.verbose.writeln('`colorspace` option OK');
+
+				// make sure dither is valid
+				if (!validateDither(options.dither)) {
+					return grunt.fail.fatal('Invalid `dither` option');
+				}
+				grunt.verbose.writeln('`dither` option OK');
+
+				// make sure filter is valid
+				if (!validateFilter(options.filter)) {
+					return grunt.fail.fatal('Invalid `filter` option');
+				}
+				grunt.verbose.writeln('`filter` option OK');
+
+				// make sure filterSupport is valid
+				if (!validateFilterSupport(options.filterSupport)) {
+					return grunt.fail.fatal('Invalid `filterSupport` option');
+				}
+				grunt.verbose.writeln('`filterSupport` option OK');
+
+				// make sure interlace is valid
+				if (!validateInterlace(options.interlace)) {
+					return grunt.fail.fatal('Invalid `interlace` option');
+				}
+				grunt.verbose.writeln('`interlace` option OK');
+
+				// make sure jpegFancyUpsampling is valid
+				if (!validateJpegFancyUpsampling(options.jpegFancyUpsampling)) {
+					return grunt.fail.fatal('Invalid `jpegFancyUpsampling` option');
+				}
+				grunt.verbose.writeln('`jpegFancyUpsampling` option OK');
+
+				// make sure optimize is valid
+				if (!validateOptimize(options.optimize)) {
+					return grunt.fail.fatal('Invalid `optimize` option');
+				}
+				grunt.verbose.writeln('`optimize` option OK');
+
+				// make sure ImageOptim is available
+				if ((options.optimize.rasterInput === true || options.optimize.rasterOutput === true) && !imageOptimPath) {
+					return grunt.fail.fatal('Unable to locate ImageOptim-CLI.');
+				} else if (options.optimize.rasterInput === true || options.optimize.rasterOutput === true) {
+					grunt.verbose.writeln('ImageOptim-CLI located');
+				} else {
+					grunt.verbose.writeln('ImageOptim-CLI not needed');
+				}
+
+				// make sure pngCompressionFilter is valid
+				if (!validatePngCompressionFilter(options.pngCompressionFilter)) {
+					return grunt.fail.fatal('Invalid `pngCompressionFilter` option');
+				}
+				grunt.verbose.writeln('`pngCompressionFilter` option OK');
+
+				// make sure pngCompressionLevel is valid
+				if (!validatePngCompressionLevel(options.pngCompressionLevel)) {
+					return grunt.fail.fatal('Invalid `pngCompressionLevel` option');
+				}
+				grunt.verbose.writeln('`pngCompressionLevel` option OK');
+
+				// make sure pngCompressionStrategy is valid
+				if (!validatePngCompressionStrategy(options.pngCompressionStrategy)) {
+					return grunt.fail.fatal('Invalid `pngCompressionStrategy` option');
+				}
+				grunt.verbose.writeln('`pngCompressionStrategy` option OK');
+
+				// make sure pngExcludeChunk is valid
+				if (!validatePngExcludeChunk(options.pngExcludeChunk)) {
+					return grunt.fail.fatal('Invalid `pngExcludeChunk` option');
+				}
+				grunt.verbose.writeln('`pngExcludeChunk` option OK');
+
+				// make sure pngPreserveColormap is valid
+				if (!validatePngPreserveColormap(options.pngPreserveColormap)) {
+					return grunt.fail.fatal('Invalid `pngPreserveColormap` option');
+				}
+				grunt.verbose.writeln('`pngPreserveColormap` option OK');
+
+				// make sure posterize is valid
+				if (!validatePosterize(options.posterize)) {
+					return grunt.fail.fatal('Invalid `posterize` option');
+				}
+				grunt.verbose.writeln('`posterize` option OK');
+
 				// make sure quality is valid
 				if (!validateQuality(options.quality)) {
-					return grunt.log.warn('Quality is invalid (' + options.quality + '). Make sure it’s a value between 0 and 100.');
+					return grunt.fail.fatal('Invalid `quality` option');
 				}
+				grunt.verbose.writeln('`quality` option OK');
+
+				// make sure resizeFunction is valid
+				if (!validateResizeFunction(options.resizeFunction)) {
+					return grunt.fail.fatal('Invalid `resizeFunction` option');
+				}
+				grunt.verbose.writeln('`resizeFunction` option OK');
+
+				// make sure strip is valid
+				if (!validateStrip(options.strip)) {
+					return grunt.fail.fatal('Invalid `strip` option');
+				}
+				grunt.verbose.writeln('`strip` option OK');
+
+				// make sure svgoPlugins is valid
+				if (!validateSvgoPlugins(options.svgoPlugins)) {
+					return grunt.fail.fatal('Invalid `svgoPlugins` option');
+				}
+				grunt.verbose.writeln('`svgoPlugins` option OK');
+
+				// make sure unsharp is valid
+				if (!validateUnsharp(options.unsharp)) {
+					return grunt.fail.fatal('Invalid `unsharp` option');
+				}
+				grunt.verbose.writeln('`unsharp` option OK');
+
+				// make sure the widths are valid
+				if (!validateWidths(options.widths)) {
+					return grunt.fail.fatal('Invalid `widths` option');
+				}
+				grunt.verbose.writeln('`widths` option OK');
 
 				// make sure there are images to resize
 				if (task.files.length === 0) {
-					return grunt.log.warn('Unable to compile; no valid source files were found.');
+					return grunt.fail.fatal('No valid source files were found.');
 				}
-
-				// make sure the widths are valid
-				async.each(options.widths, function(width, callback2) {
-					if (!validateWidth(width)) {
-						return grunt.log.warn('Width is invalid (' + width + '). Make sure it’s an integer.');
-					}
-					callback2(null);
-				}, callback);
+				grunt.verbose.writeln('Source files found');
 
 				// loop through each input
 				async.each(task.files, function(file, callback2) {
 					// make sure we have a valid target and source
 					validateTarget(file);
 					validateSource(file);
-				});
-
-				// TODO: validate more options
-
+					callback2();
+				}, callback);
 			},
 
 			// optimize SVG inputs
@@ -796,7 +1119,7 @@ module.exports = function(grunt) {
 
 			},
 
-			// process images
+			// resize images
 			function(callback) {
 
 				// tell the user what we’re doing
