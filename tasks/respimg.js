@@ -30,12 +30,34 @@ module.exports = function(grunt) {
 		SVGO =				require('svgo'),
 
 		cpSpawn =			childProcess.spawn,
-		imageOptimPaths = [
-							'../node_modules/imageoptim-cli/bin',
-							'../../imageoptim-cli/bin'
-		].map(function(dir) {
-			return path.resolve(__dirname, dir);
-		}),
+		binPaths =			{
+			image_optim:		[
+									'/usr/local/sbin/image_optim',
+									'/usr/local/bin/image_optim',
+									'/usr/sbin/image_optim',
+									'/usr/bin/image_optim',
+									'/sbin/image_optim',
+									'/bin/image_optim'
+								].map(function(dir) {
+									return path.resolve(__dirname, dir);
+								}),
+			picopt:				[
+									'/usr/local/sbin/picopt',
+									'/usr/local/bin/picopt',
+									'/usr/sbin/picopt',
+									'/usr/bin/picopt',
+									'/sbin/picopt',
+									'/bin/picopt'
+								].map(function(dir) {
+									return path.resolve(__dirname, dir);
+								}),
+			imageOptim:			[
+									'../node_modules/imageoptim-cli/bin',
+									'../../imageoptim-cli/bin'
+								].map(function(dir) {
+									return path.resolve(__dirname, dir);
+								})
+		},
 
 		DEFAULT_OPTIONS = {
 			// options: Activate, Associate, Background, Copy, Deactivate, Disassociate, Extract, Off, On, Opaque, Remove, Set, Shape, Transparent
@@ -69,9 +91,23 @@ module.exports = function(grunt) {
 			// options for each: true, false
 			// TODO: make these ints representing how many times to run optimization
 			optimize :		{
-				svg:					true,
-				rasterInput:			true,
-				rasterOutput:			true
+				svg:					false,	// deprecated
+				rasterInput:			false,	// deprecated
+				rasterOutput:			false,	// deprecated
+
+				input: {
+					svgo:				0,
+					image_optim:		0,
+					imageOptim:			0,
+					picopt:				0
+				},
+
+				output: {
+					svgo:				3,
+					image_optim:		1,
+					imageOptim:			1,
+					picopt:				1
+				}
 			},
 
 			// options: (int) 0–9
@@ -183,12 +219,12 @@ module.exports = function(grunt) {
 
 
 		/**
-		 * Ensure the ImageOptim-CLI binary is accessible
+		 * Ensure the image optimization binaries are accessible
 		 * @return {String}
 		 */
-		getPathToImageOptim = function() {
-			return imageOptimPaths.filter(function(imageOptimPath) {
-				return grunt.file.exists(imageOptimPath);
+		getPathToBin = function(bin) {
+			return binPaths[bin].filter(function(binPath) {
+				return grunt.file.exists(binPath);
 			})[0];
 		},
 
@@ -212,16 +248,47 @@ module.exports = function(grunt) {
 
 		/**
 		 * @param  {String[]}  files             Array of paths to files
-		 * @param  {String}    imageOptimPath    Path to imageOptim binary
+		 * @param  {String}    binPath           Path to image_optim binary
 		 * @return {Promise}
 		 */
-		optimizeRaster = function(files, imageOptimPath) {
+		optimizeImage_optim = function(files, binPath) {
+			var image_optim,
+				deferred = q.defer(),
+				errorMessage = 'image_optim exited with a failure status',
+				ymlPath = path.resolve(__dirname, 'lib/i_o.yml');
+
+			image_optim = cpSpawn(binPath, ['--config-paths', ymlPath].concat(files), {});
+
+			image_optim.stdout.on('data', function(message) {
+				grunt.verbose.ok(String(message || '').replace(/\n+$/, ''));
+			});
+
+			image_optim.stderr.on('data', function(data) {
+				grunt.verbose.ok(data.toString('utf8'));
+			});
+
+			image_optim.on('exit', function(code, signal) {
+				code === 0 ? deferred.resolve(true) : deferred.reject(new Error(errorMessage));
+			});
+
+			image_optim.stdin.setEncoding('utf8');
+
+			return deferred.promise;
+		},
+
+
+		/**
+		 * @param  {String[]}  files             Array of paths to files
+		 * @param  {String}    binPath           Path to imageOptim binary
+		 * @return {Promise}
+		 */
+		optimizeImageOptim = function(files, binPath) {
 			var imageOptimCli,
 				deferred = q.defer(),
 				errorMessage = 'ImageOptim-CLI exited with a failure status';
 
 			imageOptimCli = cpSpawn('./imageOptim', ['--quit'], {
-				cwd: imageOptimPath
+				cwd: binPath
 			});
 
 			imageOptimCli.stdout.on('data', function(message) {
@@ -241,10 +308,40 @@ module.exports = function(grunt) {
 
 		/**
 		 * @param  {String[]}  files             Array of paths to files
+		 * @param  {String}    binPath           Path to picopt binary
+		 * @return {Promise}
+		 */
+		optimizePicopt = function(files, binPath) {
+			var picopt,
+				deferred = q.defer(),
+				errorMessage = 'picopt exited with a failure status';
+
+			picopt = cpSpawn(binPath, files, {});
+
+			picopt.stdout.on('data', function(message) {
+				grunt.verbose.ok(String(message || '').replace(/\n+$/, ''));
+			});
+
+			picopt.stderr.on('data', function(data) {
+				grunt.verbose.ok(data.toString('utf8'));
+			});
+
+			picopt.on('exit', function(code, signal) {
+				return code === 0 ? deferred.resolve(true) : deferred.reject(new Error(errorMessage));
+			});
+
+			picopt.stdin.setEncoding('utf8');
+
+			return deferred.promise;
+		},
+
+
+		/**
+		 * @param  {String[]}  files             Array of paths to files
 		 * @param  {Object}    options           Options
 		 * @return {Promise}
 		 */
-		optimizeSVG = function(file, options) {
+		optimizeSVGO = function(file, options) {
 			// setup the promise and SVGO
 			var deferred =	q.defer(),
 				svgo =		new SVGO({ plugins : options.svgoPlugins });
@@ -628,23 +725,80 @@ module.exports = function(grunt) {
 
 
 		validateOptimize = function(optimize) {
+			// validate parent and children
 			if (optimize === null || typeof(optimize) !== 'object') {
 				grunt.fail.fatal('Invalid value for optimize: ' + optimize);
 				return false;
 			}
-			if (optimize.svg !== true && optimize.svg !== false) {
-				grunt.fail.fatal('Invalid value for optimize.svg: ' + optimize.svg);
+
+			// recreate defaults if a deprecated parent has been passed
+			if (optimize.input === null || typeof(optimize.input) !== 'object') {
+				optimize.input = {
+					svgo:				0,
+					image_optim:		0,
+					picopt:				0,
+					imageOptim:			0
+				};
+			}
+			if (optimize.output === null || typeof(optimize.output) !== 'object') {
+				optimize.output = {
+					svgo:				3,
+					image_optim:		1,
+					picopt:				1,
+					imageOptim:			1
+				}
+			}
+
+			// validate grandchildren
+			if (optimize.input.svgo !== parseInt(optimize.input.svgo, 10) || optimize.input.svgo < 0) {
+				grunt.fail.fatal('Invalid value for optimize.input.svgo: ' + optimize.input.svgo);
 				return false;
 			}
-			if (optimize.rasterInput !== true && optimize.rasterInput !== false) {
-				grunt.fail.fatal('Invalid value for optimize.rasterInput: ' + optimize.rasterInput);
+			if (optimize.input.image_optim !== parseInt(optimize.input.image_optim, 10) || optimize.input.image_optim < 0) {
+				grunt.fail.fatal('Invalid value for optimize.input.image_optim: ' + optimize.input.image_optim);
 				return false;
 			}
-			if (optimize.rasterOutput !== true && optimize.rasterOutput !== false) {
-				grunt.fail.fatal('Invalid value for optimize.rasterOutput: ' + optimize.rasterOutput);
+			if (optimize.input.picopt !== parseInt(optimize.input.picopt, 10) || optimize.input.picopt < 0) {
+				grunt.fail.fatal('Invalid value for optimize.input.picopt: ' + optimize.input.picopt);
 				return false;
 			}
-			return true;
+			if (optimize.input.imageOptim !== parseInt(optimize.input.imageOptim, 10) || optimize.input.imageOptim < 0) {
+				grunt.fail.fatal('Invalid value for optimize.imageOptim: ' + optimize.imageOptim);
+				return false;
+			}
+			if (optimize.output.svgo !== parseInt(optimize.output.svgo, 10) || optimize.output.svgo < 0) {
+				grunt.fail.fatal('Invalid value for optimize.output.svgo: ' + optimize.output.svgo);
+				return false;
+			}
+			if (optimize.output.image_optim !== parseInt(optimize.output.image_optim, 10) || optimize.output.image_optim < 0) {
+				grunt.fail.fatal('Invalid value for optimize.output.image_optim: ' + optimize.image_optim);
+				return false;
+			}
+			if (optimize.output.picopt !== parseInt(optimize.output.picopt, 10) || optimize.output.picopt < 0) {
+				grunt.fail.fatal('Invalid value for optimize.picopt: ' + optimize.picopt);
+				return false;
+			}
+			if (optimize.output.imageOptim !== parseInt(optimize.output.imageOptim, 10) || optimize.output.imageOptim < 0) {
+				grunt.fail.fatal('Invalid value for optimize.imageOptim: ' + optimize.imageOptim);
+				return false;
+			}
+
+			// convert deprecated settings
+			if (optimize.svg === true || optimize.svg === 1) {
+				optimize.input.svgo = 1;
+				optimize.svg = null;
+			}
+			if (optimize.rasterInput === true || optimize.rasterInput === 1) {
+				optimize.input.imageOptim = 1;
+				optimize.rasterInput = null;
+			}
+			if (optimize.rasterOutput === true || optimize.rasterOutput === 1) {
+				optimize.output.imageOptim = 1;
+				optimize.rasterOutput = null;
+			}
+
+			// return the options object with this new converted monstrosity
+			return optimize;
 		},
 
 
@@ -899,7 +1053,11 @@ module.exports = function(grunt) {
 			task =				this,
 			promise =			q(),
 			promise2 =			q(),
-			imageOptimPath =	getPathToImageOptim(),
+			binPath =			{
+				image_optim:		getPathToBin('image_optim'),
+				picopt:				getPathToBin('picopt'),
+				imageOptim:			getPathToBin('imageOptim')
+			},
 			outputFiles = 		[],
 			totalSaved =		0;
 
@@ -959,15 +1117,36 @@ module.exports = function(grunt) {
 				grunt.verbose.writeln('`jpegFancyUpsampling` option OK');
 
 				// make sure optimize is valid
-				if (!validateOptimize(options.optimize)) {
+				var optimize = validateOptimize(options.optimize)
+				if (!optimize) {
 					return grunt.fail.fatal('Invalid `optimize` option');
+				} else {
+					options.optimize = optimize;
 				}
 				grunt.verbose.writeln('`optimize` option OK');
 
+				// make sure image_optim is available
+				if ((options.optimize.input.image_optim > 0 || options.optimize.output.image_optim > 0) && !binPath.image_optim) {
+					return grunt.fail.fatal('Unable to locate image_optim.');
+				} else if (options.optimize.input.image_optim > 0 || options.optimize.output.image_optim > 0) {
+					grunt.verbose.writeln('image_optim located');
+				} else {
+					grunt.verbose.writeln('image_optim not needed');
+				}
+
+				// make sure picopt is available
+				if ((options.optimize.input.picopt > 0 || options.optimize.output.picopt > 0) && !binPath.picopt) {
+					return grunt.fail.fatal('Unable to locate picopt.');
+				} else if (options.optimize.input.picopt > 0 || options.optimize.output.picopt > 0) {
+					grunt.verbose.writeln('picopt located');
+				} else {
+					grunt.verbose.writeln('picopt not needed');
+				}
+
 				// make sure ImageOptim is available
-				if ((options.optimize.rasterInput === true || options.optimize.rasterOutput === true) && !imageOptimPath) {
+				if ((options.optimize.input.imageOptim > 0 || options.optimize.output.imageOptim > 0) && !binPath.imageOptim) {
 					return grunt.fail.fatal('Unable to locate ImageOptim-CLI.');
-				} else if (options.optimize.rasterInput === true || options.optimize.rasterOutput === true) {
+				} else if (options.optimize.input.imageOptim > 0 || options.optimize.output.imageOptim > 0) {
 					grunt.verbose.writeln('ImageOptim-CLI located');
 				} else {
 					grunt.verbose.writeln('ImageOptim-CLI not needed');
@@ -1066,20 +1245,20 @@ module.exports = function(grunt) {
 				}, callback);
 			},
 
-			// optimize SVG inputs
+			// optimize inputs - SVGO
 			function(callback) {
 
-				// only do this if the options to optimize SVGs is set to true
-				if (options.optimize.svg === true) {
+				// optimize as many times as the user wants
+				async.timesSeries(options.optimize.input.svgo, function(i, next) {
 
-					// tell the user that we’re optiming SVGs
-					grunt.log.writeln('Optimizing SVG inputs…');
+					// tell the user that we’re optimizing
+					grunt.log.writeln('Optimizing inputs with SVGO (pass ' + (i + 1) + ' of ' + options.optimize.input.svgo + ')…');
 
 					// asynchronously loop through the files
 					async.each(task.files, function(file, callback2) {
 
 						// create a promise to optimize the SVGs
-						promise = optimizeSVG(file, options);
+						promise = optimizeSVGO(file, options);
 
 						// when that promise is finished, print the results onscreen
 						// (if we’re being verbose)
@@ -1091,49 +1270,120 @@ module.exports = function(grunt) {
 							callback2(null);
 						});
 
+					}, next);
+
+				}, callback);
+
+			},
+
+			// optimize inputs - image_optim
+			function(callback) {
+
+				// build a list of individual files
+				var rasterFiles =	[];
+				task.files.forEach(function(file) {
+					if (!grunt.file.isDir(file.src[0]) && path.extname(file.dest).toLowerCase() !== '.svg') {
+						rasterFiles.push(file.src[0]);
+					}
+				});
+
+				// if there’s anything to optimize…
+				if (rasterFiles.length > 0) {
+
+					// get absolute paths to the stuff we’re optimizing
+					var rasterFilesResolved = rasterFiles.map(function(dir) {
+						return path.resolve(__dirname, '../' + dir);
+					});
+
+					// optimize as many times as the user wants
+					async.timesSeries(options.optimize.input.image_optim, function(i, next) {
+
+						// let the user know that we’re optimizing inputs
+						grunt.log.writeln('Optimizing inputs with image_optim (pass ' + (i + 1) + ' of ' + options.optimize.input.image_optim + ')…');
+
+						// do the optimizations (with promises)
+						optimizeImage_optim(rasterFilesResolved, binPath.image_optim).then(function() {
+							next();
+						});
+
 					}, callback);
 
-				// if we’re not optimizing SVGs, just move along
 				} else {
 					callback(null);
 				}
 
 			},
 
-			// optimize raster inputs
+			// optimize inputs - picopt
 			function(callback) {
 
-				// only do this if the options to optimize input raster images is set to true
-				if (options.optimize.rasterInput === true) {
+				// build a list of individual files
+				var rasterFiles =	[];
+				task.files.forEach(function(file) {
+					if (!grunt.file.isDir(file.src[0]) && path.extname(file.dest).toLowerCase() !== '.svg') {
+						rasterFiles.push(file.src[0]);
+					}
+				});
 
-					// build a list of individual files
-					var rasterFiles =	[];
-					task.files.forEach(function(file) {
-						if (!grunt.file.isDir(file.src[0]) && path.extname(file.dest).toLowerCase() !== '.svg') {
-							rasterFiles.push(file.src[0]);
-						}
+				// if there’s anything to optimize…
+				if (rasterFiles.length > 0) {
+
+					// get absolute paths to the stuff we’re optimizing
+					var rasterFilesResolved = rasterFiles.map(function(dir) {
+						return path.resolve(__dirname, '../' + dir);
 					});
 
-					// if there’s anything to optimize…
-					if (rasterFiles.length > 0) {
-
-						// get absolute paths to the stuff we’re optimizing
-						rasterFiles = rasterFiles.map(function(dir) {
-							return path.resolve(__dirname, '../' + dir);
-						});
+					// optimize as many times as the user wants
+					async.timesSeries(options.optimize.input.picopt, function(i, next) {
 
 						// let the user know that we’re optimizing inputs
-						grunt.log.writeln('Optimizing raster inputs…');
+						grunt.log.writeln('Optimizing inputs with picopt (pass ' + (i + 1) + ' of ' + options.optimize.input.picopt + ')…');
 
 						// do the optimizations (with promises)
-						promise = optimizeRaster(rasterFiles, imageOptimPath);
-						promise.done(function() {
-							callback(null);
+						optimizePicopt(rasterFilesResolved, binPath.picopt).then(function() {
+							next();
 						});
 
-					} else {
-						callback(null);
+					}, callback);
+
+				} else {
+					callback(null);
+				}
+
+			},
+
+			// optimize inputs - ImageOptim
+			function(callback) {
+
+				// build a list of individual files
+				var rasterFiles =	[];
+				task.files.forEach(function(file) {
+					if (!grunt.file.isDir(file.src[0]) && path.extname(file.dest).toLowerCase() !== '.svg') {
+						rasterFiles.push(file.src[0]);
 					}
+				});
+
+				// if there’s anything to optimize…
+				if (rasterFiles.length > 0) {
+
+					// get absolute paths to the stuff we’re optimizing
+					var rasterFilesResolved = rasterFiles.map(function(dir) {
+						return path.resolve(__dirname, '../' + dir);
+					});
+
+					// optimize as many times as the user wants
+					async.timesSeries(options.optimize.input.imageOptim, function(i, next) {
+
+						// let the user know that we’re optimizing inputs
+						grunt.log.writeln('Optimizing inputs with ImageOptim (pass ' + (i + 1) + ' of ' + options.optimize.input.imageOptim + ')…');
+
+						// do the optimizations (with promises)
+						optimizeImageOptim(rasterFilesResolved, binPath.imageOptim).then(function() {
+							next();
+						});
+
+					}, callback);
+
 				} else {
 					callback(null);
 				}
@@ -1185,32 +1435,121 @@ module.exports = function(grunt) {
 
 			},
 
-			// optimize outputs
+			// optimize outputs - SVGO
 			function(callback) {
 
-				// only do this if the options to optimize input raster images is set to true
-				if (options.optimize.rasterOutput === true) {
+				// optimize as many times as the user wants
+				async.timesSeries(options.optimize.output.svgo, function(i, next) {
 
-					// if there’s anything to optimize…
-					if (outputFiles.length > 0) {
+					// tell the user that we’re optimizing
+					grunt.log.writeln('Optimizing outputs with SVGO (pass ' + (i + 1) + ' of ' + options.optimize.output.svgo + ')…');
 
-						// get absolute paths to the stuff we’re optimizing
-						outputFiles = outputFiles.map(function(dir) {
-							return path.resolve(__dirname, '../' + dir);
+					// asynchronously loop through the files
+					async.each(outputFiles, function(file, callback2) {
+
+						// create a promise to optimize the SVGs
+						promise = optimizeSVGO(file, options);
+
+						// when that promise is finished, print the results onscreen
+						// (if we’re being verbose)
+						// and continue onwards
+						promise.done(function(results) {
+							if (results) {
+								grunt.verbose.ok(results);
+							}
+							callback2(null);
 						});
+
+					}, next);
+
+				}, callback);
+
+			},
+
+			// optimize outputs - image_optim
+			function(callback) {
+
+				// if there’s anything to optimize…
+				if (outputFiles.length > 0) {
+
+					// get absolute paths to the stuff we’re optimizing
+					var outputFilesResolved = outputFiles.map(function(dir) {
+						return path.resolve(__dirname, '../' + dir);
+					});
+
+					// optimize as many times as the user wants
+					async.timesSeries(options.optimize.output.image_optim, function(i, next) {
 
 						// let the user know that we’re optimizing inputs
-						grunt.log.writeln('Optimizing raster resized images…');
+						grunt.log.writeln('Optimizing outputs with image_optim (pass ' + (i + 1) + ' of ' + options.optimize.output.image_optim + ')…');
 
 						// do the optimizations (with promises)
-						promise = optimizeRaster(outputFiles, imageOptimPath);
-						promise.done(function() {
-							callback(null);
+						optimizeImage_optim(outputFilesResolved, binPath.image_optim).then(function() {
+							next();
 						});
 
-					} else {
-						callback(null);
-					}
+					}, callback);
+
+				} else {
+					callback(null);
+				}
+
+			},
+
+			// optimize outputs - picopt
+			function(callback) {
+
+				// if there’s anything to optimize…
+				if (outputFiles.length > 0) {
+
+					// get absolute paths to the stuff we’re optimizing
+					var outputFilesResolved = outputFiles.map(function(dir) {
+						return path.resolve(__dirname, '../' + dir);
+					});
+
+					// optimize as many times as the user wants
+					async.timesSeries(options.optimize.output.picopt, function(i, next) {
+
+						// let the user know that we’re optimizing inputs
+						grunt.log.writeln('Optimizing outputs with picopt (pass ' + (i + 1) + ' of ' + options.optimize.output.picopt + ')…');
+
+						// do the optimizations (with promises)
+						optimizePicopt(outputFilesResolved, binPath.picopt).then(function() {
+							next();
+						});
+
+					}, callback);
+
+				} else {
+					callback(null);
+				}
+
+			},
+
+			// optimize outputs - ImageOptim
+			function(callback) {
+
+				// if there’s anything to optimize…
+				if (outputFiles.length > 0) {
+
+					// get absolute paths to the stuff we’re optimizing
+					var outputFilesResolved = outputFiles.map(function(dir) {
+						return path.resolve(__dirname, '../' + dir);
+					});
+
+					// optimize as many times as the user wants
+					async.timesSeries(options.optimize.output.imageOptim, function(i, next) {
+
+						// let the user know that we’re optimizing inputs
+						grunt.log.writeln('Optimizing outputs with ImageOptim (pass ' + (i + 1) + ' of ' + options.optimize.output.imageOptim + ')…');
+
+						// do the optimizations (with promises)
+						optimizeImageOptim(outputFilesResolved, binPath.imageOptim).then(function() {
+							next();
+						});
+
+					}, callback);
+
 				} else {
 					callback(null);
 				}

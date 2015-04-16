@@ -34,7 +34,7 @@ Once the plugin has been installed, it may be enabled inside your Gruntfile with
 grunt.loadNpmTasks('grunt-respimg');
 ```
 
-For image optimization, you’ll need to install [ImageOptim](https://imageoptim.com/).
+For image optimization, you’ll need to install [image_optim](https://github.com/toy/image_optim), [picopt](https://github.com/ajslater/picopt), and/or [ImageOptim](https://imageoptim.com/).
 
 ## The “respimg” task
 
@@ -61,14 +61,14 @@ The only option you should really care about setting is `widths`:
 
 #### options.widths
 
-Type: `int[]`
+Type: `int[]`  
 Default value: `[ 320, 640, 1280 ]`
 
 The widths that images should be resized to.
 
 #### options.widthAsDir
 
-Type: `bool`
+Type: `bool`  
 Default value: `false`
 
 Save resized images under a directory with the same name of the width instead adding the width to the filename.
@@ -79,9 +79,9 @@ For the most part, you should probably use the default options. They are designe
 
 #### options.alpha
 
-Type: `String` or `null`
-Possible values: `null`, `Activate`, `Associate`, `Background`, `Copy`, `Deactivate`, `Disassociate`, `Extract`, `Off`, `On`, `Opaque`, `Remove`, `Set`, `Shape`, `Transparent`
-Default value: `null`
+Type: `String` or `null`  
+Possible values: `null`, `Activate`, `Associate`, `Background`, `Copy`, `Deactivate`, `Disassociate`, `Extract`, `Off`, `On`, `Opaque`, `Remove`, `Set`, `Shape`, `Transparent`  
+Default value: `null`  
 No-optim default value: `Background`
 
 > Gives control of the alpha/matte channel of an image.
@@ -89,9 +89,9 @@ No-optim default value: `Background`
 
 #### options.background
 
-Type: `String` or `null`
-Possible values: `null` or an [ImageMagick-compatible color](http://www.imagemagick.org/script/color.php)
-Default value: `null`
+Type: `String` or `null`  
+Possible values: `null` or an [ImageMagick-compatible color](http://www.imagemagick.org/script/color.php)  
+Default value: `null`  
 No-optim default value: `Black`
 
 > Set the background color.
@@ -99,9 +99,9 @@ No-optim default value: `Black`
 
 #### options.colorspace
 
-Type: `String` or `null`
-Possible values: `null`, `CMY`, `CMYK`, `Gray`, `HCL`, `HCLp`, `HSB`, `HSI`, `HSL`, `HSV`, `HWB`, `Lab`, `LCHab`, `LCHuv`, `LMS`, `Log`, `Luv`, `OHTA`, `Rec601YCbCr`, `Rec709YCbCr`, `RGB`, `scRGB`, `sRGB`, `Transparent`, `xyY`, `XYZ`, `YCbCr`, `YCC`, `YDbDr`, `YIQ`, `YPbPr`, `YUV`
-Default value: `null`
+Type: `String` or `null`  
+Possible values: `null`, `CMY`, `CMYK`, `Gray`, `HCL`, `HCLp`, `HSB`, `HSI`, `HSL`, `HSV`, `HWB`, `Lab`, `LCHab`, `LCHuv`, `LMS`, `Log`, `Luv`, `OHTA`, `Rec601YCbCr`, `Rec709YCbCr`, `RGB`, `scRGB`, `sRGB`, `Transparent`, `xyY`, `XYZ`, `YCbCr`, `YCC`, `YDbDr`, `YIQ`, `YPbPr`, `YUV`  
+Default value: `null`  
 No-optim default value: `sRGB`
 
 > Set the image colorspace.
@@ -109,8 +109,8 @@ No-optim default value: `sRGB`
 
 #### options.dither
 
-Type: `String` or `null`
-Possible values: `null`, `FloydSteinberg`, `None`, `plus`, `Riemersma`
+Type: `String` or `null`  
+Possible values: `null`, `FloydSteinberg`, `None`, `plus`, `Riemersma`  
 Default value: `None`
 
 > Apply a Riemersma or Floyd-Steinberg error diffusion dither to images when general color reduction is applied via an option, or automagically when saving to specific formats.
@@ -118,16 +118,16 @@ Default value: `None`
 
 #### options.filter
 
-Type: `String` or `null`
-Possible values: `null`, `Bartlett`, `Bessel`, `Blackman`, `Bohman`, `Box`, `Catrom`, `Cosine`, `Cubic`, `Gaussian`, `Hamming`, `Hann`, `Hanning`, `Hermite`, `Jinc`, `Kaiser`, `Lagrange`, `Lanczos`, `Lanczos2`, `Lanczos2Sharp`, `LanczosRadius`, `LanczosSharp`, `Mitchell`, `Parzen`, `Point`, `Quadratic`, `Robidoux`, `RobidouxSharp`, `Sinc`, `SincFast`, `Spline`, `Triangle`, `Welch`, `Welsh`
-Default value: `Triangle`
+Type: `String` or `null`  
+Possible values: `null`, `Bartlett`, `Bessel`, `Blackman`, `Bohman`, `Box`, `Catrom`, `Cosine`, `Cubic`, `Gaussian`, `Hamming`, `Hann`, `Hanning`, `Hermite`, `Jinc`, `Kaiser`, `Lagrange`, `Lanczos`, `Lanczos2`, `Lanczos2Sharp`, `LanczosRadius`, `LanczosSharp`, `Mitchell`, `Parzen`, `Point`, `Quadratic`, `Robidoux`, `RobidouxSharp`, `Sinc`, `SincFast`, `Spline`, `Triangle`, `Welch`, `Welsh`  
+Default value: `Triangle`  
 
 > Use this *type* of filter when resizing or distorting an image.
 > – [ImageMagick: Command-line Options (filter)](http://www.imagemagick.org/script/command-line-options.php#filter)
 
 #### options.filterSupport
 
-Type: `float` or `null`
+Type: `float` or `null`  
 Default value: `2`
 
 > Set the filter support radius. Defines how large the filter should be and thus directly defines how slow the filtered resampling process is. All filters have a default ‘prefered’ support size. Some filters like `Lagrange` and windowed filters adjust themselves depending on this value. With simple filters this value either does nothing (but slow the resampling), or will clip the filter function in a detrimental way.
@@ -135,8 +135,8 @@ Default value: `2`
 
 #### options.interlace
 
-Type: `String` or `null`
-Possible values: `null`, `GIF`, `JPEG`, `line`, `none`, `partition`, `plane`, `PNG`
+Type: `String` or `null`  
+Possible values: `null`, `GIF`, `JPEG`, `line`, `none`, `partition`, `plane`, `PNG`  
 Default value: `Triangle`
 
 > the type of interlacing scheme.
@@ -144,9 +144,9 @@ Default value: `Triangle`
 
 #### options.jpegFancyUpsampling
 
-Type: `String` or `null`
-Possible values: `null`, `off`, `on`
-Default value: `null`
+Type: `String` or `null`  
+Possible values: `null`, `off`, `on`  
+Default value: `null`  
 No-optim default value: `off`
 
 [ImageMagick: Command-line Options (define)](http://www.imagemagick.org/script/command-line-options.php#define)
@@ -155,32 +155,91 @@ No-optim default value: `off`
 
 Type: `object`
 
-##### options.optimize.svg
+When multiple programs are used for optimization, they are run in the following order:
 
-Type: `boolean`
-Default value: `true`
+1. image_optim
+2. picopt
+3. ImageOptim
 
-Whether to optimize SVG files.
+Note: `options.optimize.svg`, `options.optimize.rasterInput`, and `options.optimize.rasterOutput` are deprecated, but should still work. Please switch your syntax to use the new `optimize` options below.
 
-##### options.optimize.rasterInput
+##### options.optimize.input
 
-Type: `boolean`
-Default value: `true`
+Type: `object`
 
-Whether to optimize input raster images (e.g. PNGs, JPEGs, GIFs).
+###### options.optimize.input.svgo
 
-##### options.optimize.rasterOutput
+Type: `int` or `null`  
+Possible values: `null`, `0`–`9`  
+Default value: `0`
 
-Type: `boolean`
-Default value: `true`
+The number of times input files should be run through SVGO optimization.
 
-Whether to optimize output/resized raster images (e.g. PNGs, JPEGs, GIFs).
+###### options.optimize.input.image_optim
+
+Type: `int` or `null`  
+Possible values: `null`, `0`–`9`  
+Default value: `0`
+
+The number of times input files should be run through image_optim optimization.
+
+###### options.optimize.input.imageOptim
+
+Type: `int` or `null`  
+Possible values: `null`, `0`–`9`  
+Default value: `0`
+
+The number of times input files should be run through imageOptim optimization.
+
+###### options.optimize.input.picopt
+
+Type: `int` or `null`  
+Possible values: `null`, `0`–`9`  
+Default value: `0`
+
+The number of times input files should be run through picopt optimization.
+
+##### options.optimize.output
+
+Type: `object`
+
+###### options.optimize.output.svgo
+
+Type: `int` or `null`  
+Possible values: `null`, `0`–`9`  
+Default value: `0`
+
+The number of times output files should be run through SVGO optimization.
+
+###### options.optimize.output.image_optim
+
+Type: `int` or `null`  
+Possible values: `null`, `0`–`9`  
+Default value: `0`
+
+The number of times output files should be run through image_optim optimization.
+
+###### options.optimize.output.imageOptim
+
+Type: `int` or `null`  
+Possible values: `null`, `0`–`9`  
+Default value: `0`
+
+The number of times output files should be run through imageOptim optimization.
+
+###### options.optimize.output.picopt
+
+Type: `int` or `null`  
+Possible values: `null`, `0`–`9`  
+Default value: `0`
+
+The number of times output files should be run through picopt optimization.
 
 #### options.pngCompressionFilter
 
-Type: `int` or `null`
-Possible values: `null`, `0`–`9`
-Default value: `null`
+Type: `int` or `null`  
+Possible values: `null`, `0`–`9`  
+Default value: `null`  
 No-optim default value: `5`
 
 > valid values are 0 through 9. 0-4 are the corresponding PNG filters, 5 means adaptive filtering except for images with a colormap, 6 means adaptive filtering for all images, 7 means MNG "loco" compression, 8 means Z_RLE strategy with adaptive filtering, and 9 means Z_RLE strategy with no filtering.
@@ -188,9 +247,9 @@ No-optim default value: `5`
 
 #### options.pngCompressionLevel
 
-Type: `int` or `null`
-Possible values: `null`, `0`–`9`
-Default value: `null`
+Type: `int` or `null`  
+Possible values: `null`, `0`–`9`  
+Default value: `null`  
 No-optim default value: `9`
 
 > valid values are 0 through 9, with 0 providing the least but fastest compression and 9 usually providing the best and always the slowest.
@@ -198,9 +257,9 @@ No-optim default value: `9`
 
 #### options.pngCompressionStrategy
 
-Type: `int` or `null`
-Possible values: `null`, `0`–`9`
-Default value: `null`
+Type: `int` or `null`  
+Possible values: `null`, `0`–`9`  
+Default value: `null`  
 No-optim default value: `1`
 
 > valid values are 0 through 4, meaning default, filtered, huffman_only, rle, and fixed ZLIB compression strategy. If you are using an old zlib that does not support Z_RLE (before 1.2.0) or Z_FIXED (before 1.2.2.2), values 3 and 4, respectively, will use the zlib default strategy instead.
@@ -208,9 +267,9 @@ No-optim default value: `1`
 
 #### options.pngExcludeChunk
 
-Type: `String` or `null`
-Possible values: `null`, `all`, `date`, `none`, or the name(s) of chunk(s) to be excluded
-Default value: `null`
+Type: `String` or `null`  
+Possible values: `null`, `all`, `date`, `none`, or the name(s) of chunk(s) to be excluded  
+Default value: `null`  
 No-optim default value: `all`
 
 > ancillary chunks to be excluded from … PNG output.
@@ -221,7 +280,7 @@ No-optim default value: `all`
 
 #### options.pngPreserveColormap
 
-Type: `Boolean` or `null`
+Type: `Boolean` or `null`  
 Default value: `true`
 
 > Use the existing image->colormap. Normally the PNG encoder will try to optimize the palette, eliminating unused entries and putting the transparent colors first. If this flag is set, that behavior is suppressed.
@@ -229,7 +288,7 @@ Default value: `true`
 
 #### options.posterize
 
-Type: `int` or `null`
+Type: `int` or `null`  
 Default value: `136`
 
 > reduce the image to a limited number of color levels per channel.
@@ -237,8 +296,8 @@ Default value: `136`
 
 #### options.quality
 
-Type: `int` or `null`
-Possible values: `null`, `0`–`100`
+Type: `int` or `null`  
+Possible values: `null`, `0`–`100`  
 Default value: `82`
 
 > JPEG/MIFF/PNG compression level.
@@ -246,8 +305,8 @@ Default value: `82`
 
 #### options.resizeFunction
 
-Type: `String` or `null`
-Possible values: `null`, `adaptive`, `distort`, `geometry`, `interpolative`, `liquid`, `resize`, `sample`, `scale`, `thumbnail`
+Type: `String` or `null`  
+Possible values: `null`, `adaptive`, `distort`, `geometry`, `interpolative`, `liquid`, `resize`, `sample`, `scale`, `thumbnail`  
 Default value: `thumbnail`
 
 * > **-adaptive-resize** … Resize the image using data-dependent triangulation.
@@ -271,8 +330,8 @@ Default value: `thumbnail`
 
 #### options.strip
 
-Type: `Boolean` or `null`
-Default value: `null`
+Type: `Boolean` or `null`  
+Default value: `null`  
 No-optim default value: `true`
 
 > strip the image of any profiles or comments.
@@ -280,7 +339,7 @@ No-optim default value: `true`
 
 #### options.svgoPlugins
 
-Type: `Object[]`
+Type: `Object[]`  
 Default value: `[ { removeUnknownsAndDefaults : false } ]`
 
 > …to customize SVG optimisation, you can disable/enable any SVGO plugins listed at the [SVGO repository](https://github.com/svg/svgo/tree/master/plugins).
@@ -298,7 +357,7 @@ Type: `object`
 
 ##### options.unsharp.radius
 
-Type: `float` or `null`
+Type: `float` or `null`  
 Default value: `0.25`
 
 > The radius of the Gaussian, in pixels,  not counting the center
@@ -306,7 +365,7 @@ Default value: `0.25`
 
 ##### options.unsharp.sigma
 
-Type: `float` or `null`
+Type: `float` or `null`  
 Default value: `0.25`
 
 > The standard deviation of the Gaussian, in pixels
@@ -314,7 +373,7 @@ Default value: `0.25`
 
 ##### options.unsharp.gain
 
-Type: `float` or `null`
+Type: `float` or `null`  
 Default value: `9`
 
 > The fraction of the difference between the original and the blur image that is added back into the original
@@ -322,8 +381,8 @@ Default value: `9`
 
 ##### options.unsharp.threshold
 
-Type: `float` or `null`
-Default value: `0.045`
+Type: `float` or `null`  
+Default value: `0.045`  
 No-optim default value: `0.065`
 
 > The threshold, as a fraction of *QuantumRange*, needed to apply the difference amount
