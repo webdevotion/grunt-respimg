@@ -61,16 +61,13 @@ module.exports = function(grunt) {
 
 		DEFAULT_OPTIONS = {
 			// options: Activate, Associate, Background, Copy, Deactivate, Disassociate, Extract, Off, On, Opaque, Remove, Set, Shape, Transparent
-			// no-optim default: Background
 			alpha :						null,
 
 			// options: an ImageMagick-compatible color (see http://www.imagemagick.org/script/color.php)
-			// no-optim default: Black
 			background :				null,
 
 			// options: CMY, CMYK, Gray, HCL, HCLp, HSB, HSI, HSL, HSV, HWB, Lab, LCHab, LCHuv, LMS, Log, Luv, OHTA, Rec601YCbCr, Rec709YCbCr, RGB, scRGB, sRGB, Transparent, xyY, XYZ, YCbCr, YCC, YDbDr, YIQ, YPbPr, YUV
-			// no-optim default: sRGB
-			colorspace :				null,
+			colorspace :				'sRGB',
 
 			// options: FloydSteinberg, None, plus, Riemersma
 			dither :					'None',
@@ -85,11 +82,9 @@ module.exports = function(grunt) {
 			interlace :					'none',
 
 			// options: off, on
-			// no-optim default: off
-			jpegFancyUpsampling :		null,
+			jpegFancyUpsampling :		'off',
 
 			// options for each: true, false
-			// TODO: make these ints representing how many times to run optimization
 			optimize :		{
 				svg:					false,	// deprecated
 				rasterInput:			false,	// deprecated
@@ -111,24 +106,20 @@ module.exports = function(grunt) {
 			},
 
 			// options: (int) 0–9
-			// no-optim default: 5
-			pngCompressionFilter :		null,
+			pngCompressionFilter :		5,
 
 			// options: (int) 0–9
-			// no-optim default: 9
-			pngCompressionLevel :		null,
+			pngCompressionLevel :		9,
 
 			// options: (int) 0–9
-			// no-optim default: 1
-			pngCompressionStrategy :	null,
+			pngCompressionStrategy :	1,
 
 			// options: “all”, “date”, “none”, or the name(s) of chunk(s) to be excluded (see http://www.imagemagick.org/script/command-line-options.php#define)
-			// no-optim default: all
-			pngExcludeChunk :			null,
+			pngExcludeChunk :			'all',
 
 			// options: true, false
 			// note that “false” is equivalent to “null”; actually passing “false” behaves the same as passing “true”
-			pngPreserveColormap :		true,
+			pngPreserveColormap :		null,
 
 			// options: (int)
 			posterize :					136,
@@ -152,11 +143,11 @@ module.exports = function(grunt) {
 			],
 
 			// options: each one is a (float)
-			// no-optim default for threshold: 0.065
+			// no-optim default: 0.25x0.25+8+0.065
 			unsharp : {
 				radius :				0.25,
-				sigma :					0.25,
-				gain :					9,
+				sigma :					0.08,
+				gain :					8.3,
 				threshold :				0.045
 			},
 
@@ -1029,16 +1020,9 @@ module.exports = function(grunt) {
 
 		// change some default options if we’re not optimizing images
 		if (!options.optimize.rasterOutput) {
-			DEFAULT_OPTIONS.alpha =						'Background';
-			DEFAULT_OPTIONS.background =				'Black';
-			DEFAULT_OPTIONS.colorspace =				'sRGB';
-			DEFAULT_OPTIONS.jpegFancyUpsampling =		'off';
-			DEFAULT_OPTIONS.pngCompressionFilter =		5;
-			DEFAULT_OPTIONS.pngCompressionLevel =		9;
-			DEFAULT_OPTIONS.pngCompressionStrategy =	1;
-			DEFAULT_OPTIONS.pngExcludeChunk =			'all';
-			DEFAULT_OPTIONS.pngPreserveColormap =		true;
 			DEFAULT_OPTIONS.strip =						true;
+			DEFAULT_OPTIONS.unsharp.sigma =				0.25;
+			DEFAULT_OPTIONS.unsharp.gain =				8;
 			DEFAULT_OPTIONS.unsharp.threshold =			0.065;
 			options = this.options(DEFAULT_OPTIONS);
 		}

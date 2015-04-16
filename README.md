@@ -82,7 +82,6 @@ For the most part, you should probably use the default options. They are designe
 Type: `String` or `null`  
 Possible values: `null`, `Activate`, `Associate`, `Background`, `Copy`, `Deactivate`, `Disassociate`, `Extract`, `Off`, `On`, `Opaque`, `Remove`, `Set`, `Shape`, `Transparent`  
 Default value: `null`  
-No-optim default value: `Background`
 
 > Gives control of the alpha/matte channel of an image.
 > – [ImageMagick: Command-line Options (alpha)](http://www.imagemagick.org/script/command-line-options.php#alpha)
@@ -92,7 +91,6 @@ No-optim default value: `Background`
 Type: `String` or `null`  
 Possible values: `null` or an [ImageMagick-compatible color](http://www.imagemagick.org/script/color.php)  
 Default value: `null`  
-No-optim default value: `Black`
 
 > Set the background color.
 > – [ImageMagick: Command-line Options (background)](http://www.imagemagick.org/script/command-line-options.php#background)
@@ -101,8 +99,7 @@ No-optim default value: `Black`
 
 Type: `String` or `null`  
 Possible values: `null`, `CMY`, `CMYK`, `Gray`, `HCL`, `HCLp`, `HSB`, `HSI`, `HSL`, `HSV`, `HWB`, `Lab`, `LCHab`, `LCHuv`, `LMS`, `Log`, `Luv`, `OHTA`, `Rec601YCbCr`, `Rec709YCbCr`, `RGB`, `scRGB`, `sRGB`, `Transparent`, `xyY`, `XYZ`, `YCbCr`, `YCC`, `YDbDr`, `YIQ`, `YPbPr`, `YUV`  
-Default value: `null`  
-No-optim default value: `sRGB`
+Default value: `sRGB`  
 
 > Set the image colorspace.
 > – [ImageMagick: Command-line Options (colorspace)](http://www.imagemagick.org/script/command-line-options.php#colorspace)
@@ -146,8 +143,7 @@ Default value: `Triangle`
 
 Type: `String` or `null`  
 Possible values: `null`, `off`, `on`  
-Default value: `null`  
-No-optim default value: `off`
+Default value: `off`  
 
 [ImageMagick: Command-line Options (define)](http://www.imagemagick.org/script/command-line-options.php#define)
 
@@ -239,8 +235,7 @@ The number of times output files should be run through picopt optimization.
 
 Type: `int` or `null`  
 Possible values: `null`, `0`–`9`  
-Default value: `null`  
-No-optim default value: `5`
+Default value: `5`  
 
 > valid values are 0 through 9. 0-4 are the corresponding PNG filters, 5 means adaptive filtering except for images with a colormap, 6 means adaptive filtering for all images, 7 means MNG "loco" compression, 8 means Z_RLE strategy with adaptive filtering, and 9 means Z_RLE strategy with no filtering.
 > – [ImageMagick: Command-line Options (define)](http://www.imagemagick.org/script/command-line-options.php#define)
@@ -249,8 +244,7 @@ No-optim default value: `5`
 
 Type: `int` or `null`  
 Possible values: `null`, `0`–`9`  
-Default value: `null`  
-No-optim default value: `9`
+Default value: `9`  
 
 > valid values are 0 through 9, with 0 providing the least but fastest compression and 9 usually providing the best and always the slowest.
 > – [ImageMagick: Command-line Options (define)](http://www.imagemagick.org/script/command-line-options.php#define)
@@ -259,8 +253,7 @@ No-optim default value: `9`
 
 Type: `int` or `null`  
 Possible values: `null`, `0`–`9`  
-Default value: `null`  
-No-optim default value: `1`
+Default value: `1`  
 
 > valid values are 0 through 4, meaning default, filtered, huffman_only, rle, and fixed ZLIB compression strategy. If you are using an old zlib that does not support Z_RLE (before 1.2.0) or Z_FIXED (before 1.2.2.2), values 3 and 4, respectively, will use the zlib default strategy instead.
 > – [ImageMagick: Command-line Options (define)](http://www.imagemagick.org/script/command-line-options.php#define)
@@ -269,8 +262,7 @@ No-optim default value: `1`
 
 Type: `String` or `null`  
 Possible values: `null`, `all`, `date`, `none`, or the name(s) of chunk(s) to be excluded  
-Default value: `null`  
-No-optim default value: `all`
+Default value: `all`  
 
 > ancillary chunks to be excluded from … PNG output.
 >
@@ -366,7 +358,8 @@ Default value: `0.25`
 ##### options.unsharp.sigma
 
 Type: `float` or `null`  
-Default value: `0.25`
+Default value: `0.08`
+No-optim default value: `0.25`
 
 > The standard deviation of the Gaussian, in pixels
 > – [ImageMagick: Command-line Options (unsharp)](http://www.imagemagick.org/script/command-line-options.php#unsharp)
@@ -374,7 +367,8 @@ Default value: `0.25`
 ##### options.unsharp.gain
 
 Type: `float` or `null`  
-Default value: `9`
+Default value: `8.3`
+No-optim default value: `8`
 
 > The fraction of the difference between the original and the blur image that is added back into the original
 > – [ImageMagick: Command-line Options (unsharp)](http://www.imagemagick.org/script/command-line-options.php#unsharp)
