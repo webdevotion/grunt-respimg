@@ -30,45 +30,41 @@ If you plan to use image optimization with this plugin (which I recommend you do
 
 I’ll assume you’re on a Mac, but the instructions should be relatively similar for Linux systems as well. I’m not sure about Windows:
 
-1. [Download and install pngout](http://advsys.net/ken/utils.htm)
-
-	To install pngout, you’ll need to move it to somewhere in your PATH. E.g.,
+First, [download and install pngout](http://advsys.net/ken/utils.htm). To install pngout, you’ll need to move it to somewhere in your PATH. E.g.,
 	
-	```shell
+```shell
 mv ~/Downloads/pngout-20150319-darwin/pngout /usr/local/bin/
 ```
 
-2. [Download and install ImageOptim](https://imageoptim.com/) (Mac only)
+Then, [download and install ImageOptim](https://imageoptim.com/) (Mac only). To install ImageOptim, decompress the .tbz2 file you downloaded from the site, and drag the `ImageOptim.app` to your Applications folder.
 
-	To install ImageOptim, decompress the .tbz2 file you downloaded from the site, and drag the `ImageOptim.app` to your Applications folder.
+Using your favorite package manager (e.g. Homebrew on OS X), install cairo, optipng, jpeg, and gifsicle:
 
-3. Using your favorite package manager (e.g. Homebrew on OS X), install cairo, optipng, jpeg, and gifsicle:
-
-	```shell
+```shell
 brew install cairo optipng jpeg gifsicle 
 ```
 
-4. Using `gem` (the Ruby gem package manager), install image_optim and image_optim_pack:
+Using `gem` (the Ruby gem package manager), install image_optim and image_optim_pack:
 
-	```shell
+```shell
 gem install image_optim image_optim_pack
 ```
 
-	If you get a permissions error, you may need to use `sudo`.
+If you get a permissions error, you may need to use `sudo`.
 
-	```shell
+```shell
 sudo gem install image_optim image_optim_pack
 ```
 
-5. Using `pip` (a Python package manager), install picopt:
+Using `pip` (a Python package manager), install picopt:
 
-	```shell
+```shell
 pip install picopt
 ```
 
-6. If you’re on a Mac, the Cairo install may be a bit wonky, so you may need to do this:
+If you’re on a Mac, the Cairo install may be a bit wonky, so you may need to do this:
 
-	```shell
+```shell
 export PKG_CONFIG_PATH=/opt/X11/lib/pkgconfig
 ```
 
@@ -514,6 +510,10 @@ If `src/img/` contained four files — `testGif.gif`, `testJpeg.jpg`, `testPng.p
 In lieu of a formal styleguide, take care to maintain the existing coding style. Add unit tests for any new or changed functionality. Lint and test your code using [Grunt](http://gruntjs.com/).
 
 ## Release History
+
+### 1.0.1
+
+* Readme fixes for npm…
 
 ### 1.0.0
 
