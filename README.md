@@ -22,7 +22,61 @@ This plugin is heavily indebted to (and has portions borrowed liberally from):
 
 This plugin requires Grunt `~0.4.5`.
 
-If you haven’t used [Grunt](http://gruntjs.com/) before, be sure to check out the [Getting Started](http://gruntjs.com/getting-started) guide, as it explains how to create a [Gruntfile](http://gruntjs.com/sample-gruntfile) as well as install and use Grunt plugins. Once you’re familiar with that process, you may install this plugin with this command:
+If you haven’t used [Grunt](http://gruntjs.com/) before, be sure to check out the [Getting Started](http://gruntjs.com/getting-started) guide, as it explains how to create a [Gruntfile](http://gruntjs.com/sample-gruntfile) as well as install and use Grunt plugins. 
+
+### Installing image optimizers
+
+If you plan to use image optimization with this plugin (which I recommend you do, and which is the default), you’ll probably to install the image optimizers first. With this plugin you can use [image_optim](https://github.com/toy/image_optim), [picopt](https://github.com/ajslater/picopt), and/or [ImageOptim](https://imageoptim.com/). Unfortunately, using them can be a bit…complicated.
+
+I’ll assume you’re on a Mac, but the instructions should be relatively similar for linux systems as well. I’m not sure about Windows:
+
+1. [Download and install pngout](http://advsys.net/ken/utils.htm)
+
+	To install pngout, you’ll need to move it to somewhere in your PATH. E.g.,
+	
+	```shell
+mv ~/Downloads/pngout-20150319-darwin/pngout /usr/local/bin/
+```
+
+2. [Download and install ImageOptim](https://imageoptim.com/) (Mac only)
+
+	To install ImageOptim, decompress the .tbz2 file you downloaded from the site, and drag the `ImageOptim.app` to you Applications folder.
+
+3. Using your favorite package manager (e.g. Homebrew on OS X), install cairo, optipng, jpeg, and gifsicle:
+
+	```shell
+brew install cairo optipng jpeg gifsicle 
+```
+
+4. Using `gem` (the Ruby gem package manager), install image_optim and image_optim_pack:
+
+	```shell
+gem install image_optim image_optim_pack
+```
+
+	If you get a permissions error, you may need to use `sudo`.
+
+	```shell
+sudo gem install image_optim image_optim_pack
+```
+
+5. Using `pip` (a Python package manager), install picopt:
+
+	```shell
+pip install picopt
+```
+
+6. If you’re on a Mac, the Cairo install may be a bit wonky, so you may need to do this:
+
+	```shell
+export PKG_CONFIG_PATH=/opt/X11/lib/pkgconfig
+```
+
+If you can’t get the optimizers working, you can turn them off using the `optimize` option (see below).
+
+### Installing the plugin
+
+Once you’ve installed the optimizers (or if you’re not going to do optimization), you may install this plugin with this command:
 
 ```shell
 npm install grunt-respimg --save-dev
@@ -34,7 +88,6 @@ Once the plugin has been installed, it may be enabled inside your Gruntfile with
 grunt.loadNpmTasks('grunt-respimg');
 ```
 
-For image optimization, you’ll need to install [image_optim](https://github.com/toy/image_optim), [picopt](https://github.com/ajslater/picopt), and/or [ImageOptim](https://imageoptim.com/).
 
 ## The “respimg” task
 
