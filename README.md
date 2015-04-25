@@ -5,7 +5,7 @@
 This plugin will:
 
 * Efficiently resize PNGs, JPEGs, and non-animated GIFs to widths that you specify
-* Rasterize SVGs to PNGs at widths that you specify
+* Rasterize SVGs and PDFs to PNGs at widths that you specify
 * Optimize all your input and output images (PNGs, JPEGs, GIFs, and SVGs)
 
 The output images should be visually indistinguishable from those output by Photoshop’s *Save for Web…*, but with (much) smaller average file sizes.
@@ -22,13 +22,43 @@ This plugin is heavily indebted to (and has portions borrowed liberally from):
 
 This plugin requires Grunt `~0.4.5`.
 
-If you haven’t used [Grunt](http://gruntjs.com/) before, be sure to check out the [Getting Started](http://gruntjs.com/getting-started) guide, as it explains how to create a [Gruntfile](http://gruntjs.com/sample-gruntfile) as well as install and use Grunt plugins. 
+If you haven’t used [Grunt](http://gruntjs.com/) before, be sure to check out the [Getting Started](http://gruntjs.com/getting-started) guide, as it explains how to create a [Gruntfile](http://gruntjs.com/sample-gruntfile) as well as install and use Grunt plugins.
+
+### Installing ImageMagick
+
+To use this grunt task, you’ll need to have ImageMagick installed. If you want this grunt task to be able to rasterize PDFs, you’ll need to install it with [GhostScript](http://www.ghostscript.com/) support.
+
+If you’re using a Mac with [Homebrew](http://brew.sh/), you can install ImageMagick like this:
+
+```shell
+brew install imagemagick --with-ghostscript
+```
+
+If you don’t have a Mac or aren’t using Homebrew, you should be able to find ImageMagick in your favourite package manager, or [download it from the ImageMagick site](http://imagemagick.org/script/binary-releases.php).
 
 ### Installing image optimizers
 
 If you plan to use image optimization with this plugin (which I recommend you do, and which is the default), you’ll probably to install the image optimizers first. With this plugin you can use [image_optim](https://github.com/toy/image_optim), [picopt](https://github.com/ajslater/picopt), and/or [ImageOptim](https://imageoptim.com/). Unfortunately, installing them can be a bit…complicated.
 
-I’ll assume you’re on a Mac, but the instructions should be relatively similar for Linux systems as well. I’m not sure about Windows:
+If you’re not able to get these working, or if you don’t care about image optimization, you can turn optimization off by setting `optimize: false` in your Gruntfile options:
+
+```javascript
+respimg: {
+	nooptim: {
+		options: {
+			optimize: false
+		},
+		files: [{
+			expand: true,
+			cwd: 'path/to/input',
+			src: ['raster/**.{jpg,gif,png,svg,pdf}'],
+			dest: 'path/to/output'
+		}]
+	}
+}
+```
+
+These installation assumptions assume you’re on a Mac, but the instructions should be relatively similar for Linux systems as well. I’m not sure about Windows:
 
 First, [download and install pngout](http://advsys.net/ken/utils.htm). To install pngout, you’ll need to move it to somewhere in your PATH. E.g.,
 	
@@ -67,8 +97,6 @@ If you’re on a Mac, the Cairo install may be a bit wonky, so you may need to d
 ```shell
 export PKG_CONFIG_PATH=/opt/X11/lib/pkgconfig
 ```
-
-If you can’t get the optimizers working, you can turn them off using the `optimize` option (see below).
 
 ### Installing the plugin
 
@@ -122,89 +150,16 @@ Default value: `false`
 
 Save resized images under a directory with the same name of the width instead adding the width to the filename.
 
-### Options you probably don’t need to care about
-
-For the most part, you should probably use the default options. They are designed to produce images that are generally visually indistinguishable from Photoshop’s *Save for Web…*, but at a smaller file size.
-
-#### options.alpha
-
-Type: `String` or `null`  
-Possible values: `null`, `Activate`, `Associate`, `Background`, `Copy`, `Deactivate`, `Disassociate`, `Extract`, `Off`, `On`, `Opaque`, `Remove`, `Set`, `Shape`, `Transparent`  
-Default value: `null`  
-
-> Gives control of the alpha/matte channel of an image.
-> – [ImageMagick: Command-line Options (alpha)](http://www.imagemagick.org/script/command-line-options.php#alpha)
-
-#### options.background
-
-Type: `String` or `null`  
-Possible values: `null` or an [ImageMagick-compatible color](http://www.imagemagick.org/script/color.php)  
-Default value: `null`  
-
-> Set the background color.
-> – [ImageMagick: Command-line Options (background)](http://www.imagemagick.org/script/command-line-options.php#background)
-
-#### options.colorspace
-
-Type: `String` or `null`  
-Possible values: `null`, `CMY`, `CMYK`, `Gray`, `HCL`, `HCLp`, `HSB`, `HSI`, `HSL`, `HSV`, `HWB`, `Lab`, `LCHab`, `LCHuv`, `LMS`, `Log`, `Luv`, `OHTA`, `Rec601YCbCr`, `Rec709YCbCr`, `RGB`, `scRGB`, `sRGB`, `Transparent`, `xyY`, `XYZ`, `YCbCr`, `YCC`, `YDbDr`, `YIQ`, `YPbPr`, `YUV`  
-Default value: `sRGB`  
-
-> Set the image colorspace.
-> – [ImageMagick: Command-line Options (colorspace)](http://www.imagemagick.org/script/command-line-options.php#colorspace)
-
-#### options.dither
-
-Type: `String` or `null`  
-Possible values: `null`, `FloydSteinberg`, `None`, `plus`, `Riemersma`  
-Default value: `None`
-
-> Apply a Riemersma or Floyd-Steinberg error diffusion dither to images when general color reduction is applied via an option, or automagically when saving to specific formats.
-> – [ImageMagick: Command-line Options (dither)](http://www.imagemagick.org/script/command-line-options.php#dither)
-
-#### options.filter
-
-Type: `String` or `null`  
-Possible values: `null`, `Bartlett`, `Bessel`, `Blackman`, `Bohman`, `Box`, `Catrom`, `Cosine`, `Cubic`, `Gaussian`, `Hamming`, `Hann`, `Hanning`, `Hermite`, `Jinc`, `Kaiser`, `Lagrange`, `Lanczos`, `Lanczos2`, `Lanczos2Sharp`, `LanczosRadius`, `LanczosSharp`, `Mitchell`, `Parzen`, `Point`, `Quadratic`, `Robidoux`, `RobidouxSharp`, `Sinc`, `SincFast`, `Spline`, `Triangle`, `Welch`, `Welsh`  
-Default value: `Triangle`  
-
-> Use this *type* of filter when resizing or distorting an image.
-> – [ImageMagick: Command-line Options (filter)](http://www.imagemagick.org/script/command-line-options.php#filter)
-
-#### options.filterSupport
-
-Type: `float` or `null`  
-Default value: `2`
-
-> Set the filter support radius. Defines how large the filter should be and thus directly defines how slow the filtered resampling process is. All filters have a default ‘prefered’ support size. Some filters like `Lagrange` and windowed filters adjust themselves depending on this value. With simple filters this value either does nothing (but slow the resampling), or will clip the filter function in a detrimental way.
-> – [ImageMagick: Command-line Options (filter)](http://www.imagemagick.org/script/command-line-options.php#filter)
-
-#### options.interlace
-
-Type: `String` or `null`  
-Possible values: `null`, `GIF`, `JPEG`, `line`, `none`, `partition`, `plane`, `PNG`  
-Default value: `Triangle`
-
-> the type of interlacing scheme.
-> – [ImageMagick: Command-line Options (interlace)](http://www.imagemagick.org/script/command-line-options.php#interlace)
-
-#### options.jpegFancyUpsampling
-
-Type: `String` or `null`  
-Possible values: `null`, `off`, `on`  
-Default value: `off`  
-
-[ImageMagick: Command-line Options (define)](http://www.imagemagick.org/script/command-line-options.php#define)
-
 #### options.optimize
 
-Type: `object`
+Type: `false`, `object`
 
 When multiple programs are used for optimization, they are run in the following order:
 
-1. image_optim
-2. picopt
-3. ImageOptim
+1. svgo
+2. image_optim
+3. picopt
+4. ImageOptim
 
 Note: `options.optimize.svg`, `options.optimize.rasterInput`, and `options.optimize.rasterOutput` are deprecated, but should still work. Please switch your syntax to use the new `optimize` options below.
 
@@ -279,6 +234,80 @@ Possible values: `null`, `0`–`9`
 Default value: `0`
 
 The number of times output files should be run through picopt optimization.
+
+### Options you probably don’t need to care about
+
+For the most part, you should probably use the default options. They are designed to produce images that are generally visually indistinguishable from Photoshop’s *Save for Web…*, but at a smaller file size.
+
+#### options.alpha
+
+Type: `String` or `null`  
+Possible values: `null`, `Activate`, `Associate`, `Background`, `Copy`, `Deactivate`, `Disassociate`, `Extract`, `Off`, `On`, `Opaque`, `Remove`, `Set`, `Shape`, `Transparent`  
+Default value: `null`  
+
+> Gives control of the alpha/matte channel of an image.
+> – [ImageMagick: Command-line Options (alpha)](http://www.imagemagick.org/script/command-line-options.php#alpha)
+
+#### options.background
+
+Type: `String` or `null`  
+Possible values: `null` or an [ImageMagick-compatible color](http://www.imagemagick.org/script/color.php)  
+Default value: `null`  
+
+> Set the background color.
+> – [ImageMagick: Command-line Options (background)](http://www.imagemagick.org/script/command-line-options.php#background)
+
+#### options.colorspace
+
+Type: `String` or `null`  
+Possible values: `null`, `CMY`, `CMYK`, `Gray`, `HCL`, `HCLp`, `HSB`, `HSI`, `HSL`, `HSV`, `HWB`, `Lab`, `LCHab`, `LCHuv`, `LMS`, `Log`, `Luv`, `OHTA`, `Rec601YCbCr`, `Rec709YCbCr`, `RGB`, `scRGB`, `sRGB`, `Transparent`, `xyY`, `XYZ`, `YCbCr`, `YCC`, `YDbDr`, `YIQ`, `YPbPr`, `YUV`  
+Default value: `sRGB`  
+
+> Set the image colorspace.
+> – [ImageMagick: Command-line Options (colorspace)](http://www.imagemagick.org/script/command-line-options.php#colorspace)
+
+#### options.dither
+
+Type: `String` or `null`  
+Possible values: `null`, `FloydSteinberg`, `None`, `plus`, `Riemersma`  
+Default value: `None`
+
+> Apply a Riemersma or Floyd-Steinberg error diffusion dither to images when general color reduction is applied via an option, or automagically when saving to specific formats.
+> – [ImageMagick: Command-line Options (dither)](http://www.imagemagick.org/script/command-line-options.php#dither)
+
+#### options.filter
+
+Type: `String` or `null`  
+Possible values: `null`, `Bartlett`, `Bessel`, `Blackman`, `Bohman`, `Box`, `Catrom`, `Cosine`, `Cubic`, `Gaussian`, `Hamming`, `Hann`, `Hanning`, `Hermite`, `Jinc`, `Kaiser`, `Lagrange`, `Lanczos`, `Lanczos2`, `Lanczos2Sharp`, `LanczosRadius`, `LanczosSharp`, `Mitchell`, `Parzen`, `Point`, `Quadratic`, `Robidoux`, `RobidouxSharp`, `Sinc`, `SincFast`, `Spline`, `Triangle`, `Welch`, `Welsh`  
+Default value: `Triangle`  
+
+> Use this *type* of filter when resizing or distorting an image.
+> – [ImageMagick: Command-line Options (filter)](http://www.imagemagick.org/script/command-line-options.php#filter)
+
+#### options.filterSupport
+
+Type: `float` or `null`  
+Default value: `2`
+
+> Set the filter support radius. Defines how large the filter should be and thus directly defines how slow the filtered resampling process is. All filters have a default ‘prefered’ support size. Some filters like `Lagrange` and windowed filters adjust themselves depending on this value. With simple filters this value either does nothing (but slow the resampling), or will clip the filter function in a detrimental way.
+> – [ImageMagick: Command-line Options (filter)](http://www.imagemagick.org/script/command-line-options.php#filter)
+
+#### options.interlace
+
+Type: `String` or `null`  
+Possible values: `null`, `GIF`, `JPEG`, `line`, `none`, `partition`, `plane`, `PNG`  
+Default value: `Triangle`
+
+> the type of interlacing scheme.
+> – [ImageMagick: Command-line Options (interlace)](http://www.imagemagick.org/script/command-line-options.php#interlace)
+
+#### options.jpegFancyUpsampling
+
+Type: `String` or `null`  
+Possible values: `null`, `off`, `on`  
+Default value: `off`  
+
+[ImageMagick: Command-line Options (define)](http://www.imagemagick.org/script/command-line-options.php#define)
 
 #### options.pngCompressionFilter
 
