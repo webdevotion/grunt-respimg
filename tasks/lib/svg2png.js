@@ -24,7 +24,6 @@ var fs =    require('fs'),
 
 	page,
 	svgdata,
-	img,
 	html,
 	svg,
 	frag,
@@ -49,15 +48,6 @@ var fs =    require('fs'),
 		width = parseFloat(width);
 		height = parseFloat(svgHeight * width / svgWidth);
 
-		// create an image element with the SVG data
-		img = window.document.createElement('img');
-		img.src = 'data:image/svg+xml;utf8,' + svgdata;
-
-		// set the image width and height to our output width and newly calculated height
-		img.setAttribute('width', parseFloat(width));
-		img.setAttribute('height', parseFloat(height));
-		img.style.cssText = 'display: block; width: ' + width + 'px; height: ' + height + 'px';
-
 		// set the viewport to the size of the image
 		page.viewportSize = {
 			width: width,
@@ -65,8 +55,15 @@ var fs =    require('fs'),
 		};
 
 		// open a page containing the image we just created
-		html = 'data:text/html,<!DOCTYPE html><title>svg!</title><body style="padding:0;margin:0">' + img.outerHTML + '</body>';
+		html = 'data:text/html,<!DOCTYPE html><title>svg!</title><body style="padding:0;margin:0"></body>';
 		page.open(html, function(status) {
+
+			var inject = page.evaluate(function(svgdata) {
+				document.body.innerHTML = svgdata;
+				document.querySelector('svg').setAttribute('style','width:100%;height:100%');
+				return true;
+			}, svgdata);
+
 			// render the page to a PNG
 			page.render(dest);
 
