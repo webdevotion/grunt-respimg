@@ -1,7 +1,7 @@
 {
   "name": "grunt-respimg",
   "description": "A responsive image workflow for optimizing and resizing your images",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "homepage": "https://github.com/nwtn/grunt-respimg",
   "author": {
     "name": "David Newton",

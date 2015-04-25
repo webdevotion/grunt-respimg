@@ -14,7 +14,7 @@
  *		<https://github.com/sindresorhus/grunt-svgmin>
  *
  * @author David Newton (http://twitter.com/newtron)
- * @version 1.0.1
+ * @version 1.1.0
  */
 
  'use strict';
