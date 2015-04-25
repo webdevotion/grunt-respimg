@@ -781,6 +781,25 @@ module.exports = function(grunt) {
 
 
 		validateOptimize = function(optimize) {
+			// setting it to false is equivalent to zeroes e’rywhere
+			if (optimize === false) {
+				optimize = {
+					input: {
+						svgo:				0,
+						image_optim:		0,
+						picopt:				0,
+						imageOptim:			0
+					},
+					output: {
+						svgo:				0,
+						image_optim:		0,
+						picopt:				0,
+						imageOptim:			0
+					}
+				};
+				return optimize;
+			}
+
 			// validate parent and children
 			if (optimize === null || typeof(optimize) !== 'object') {
 				grunt.fail.fatal('Invalid value for optimize: ' + optimize);
@@ -1084,7 +1103,15 @@ module.exports = function(grunt) {
 		var options = this.options(DEFAULT_OPTIONS);
 
 		// change some default options if we’re not optimizing images
-		if (!options.optimize.rasterOutput) {
+		if (
+			!options.optimize ||
+			!options.optimize.output ||
+			(
+				!options.optimize.output.image_optim &&
+				!options.optimize.output.picopt &&
+				!options.optimize.output.imageOptim
+			)
+		) {
 			DEFAULT_OPTIONS.strip =						true;
 			DEFAULT_OPTIONS.unsharp.sigma =				0.25;
 			DEFAULT_OPTIONS.unsharp.gain =				8;

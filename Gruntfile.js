@@ -40,6 +40,27 @@
 					dest: 'test/generated/default/'
 				}]
 			},
+			nooptim: {
+				options: {
+					optimize: false
+				},
+				files: [{
+					expand: true,
+					cwd: 'test/assets/',
+					src: ['raster/**.{jpg,gif,png,svg,pdf}'],
+					dest: 'test/generated/nooptim/'
+				},{
+					expand: true,
+					cwd: 'test/assets/',
+					src: ['svg/**.{jpg,gif,png,svg,pdf}'],
+					dest: 'test/generated/nooptim/'
+				},{
+					expand: true,
+					cwd: 'test/assets/',
+					src: ['pdf/**.{jpg,gif,png,svg,pdf}'],
+					dest: 'test/generated/nooptim/'
+				}]
+			},
 			widthAsDir: {
 				options: {
 					widthAsDir: true
