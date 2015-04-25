@@ -26,12 +26,17 @@
 				files: [{
 					expand: true,
 					cwd: 'test/assets/',
-					src: ['raster/**.{jpg,gif,png,svg}'],
+					src: ['raster/**.{jpg,gif,png,svg,pdf}'],
 					dest: 'test/generated/default/'
 				},{
 					expand: true,
 					cwd: 'test/assets/',
-					src: ['svg/**.{jpg,gif,png,svg}'],
+					src: ['svg/**.{jpg,gif,png,svg,pdf}'],
+					dest: 'test/generated/default/'
+				},{
+					expand: true,
+					cwd: 'test/assets/',
+					src: ['pdf/**.{jpg,gif,png,svg,pdf}'],
 					dest: 'test/generated/default/'
 				}]
 			},
@@ -42,12 +47,17 @@
 				files: [{
 					expand: true,
 					cwd: 'test/assets/',
-					src: ['raster/**.{jpg,gif,png,svg}'],
+					src: ['raster/**.{jpg,gif,png,svg,pdf}'],
 					dest: 'test/generated/widthAsDir/'
 				},{
 					expand: true,
 					cwd: 'test/assets/',
-					src: ['svg/**.{jpg,gif,png,svg}'],
+					src: ['svg/**.{jpg,gif,png,svg,pdf}'],
+					dest: 'test/generated/widthAsDir/'
+				},{
+					expand: true,
+					cwd: 'test/assets/',
+					src: ['pdf/**.{jpg,gif,png,svg,pdf}'],
 					dest: 'test/generated/widthAsDir/'
 				}]
 			}

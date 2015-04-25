@@ -23,6 +23,7 @@ module.exports = function(grunt) {
 
 	var async =				require('async'),
 		childProcess =		require('child_process'),
+		fs =				require('fs-extra'),
 		im =				require('node-imagemagick'),
 		path =				require('path'),
 		phantomjs =			require('phantomjs'),
@@ -198,7 +199,10 @@ module.exports = function(grunt) {
 			baseName = path.basename(srcPath, extName); // filename without extension
 			dirName = path.dirname(dstPath);
 
-			if (options.widthAsDir) {
+			if (width === false) {
+				checkDirectoryExists(path.join(dirName));
+				return path.join(dirName, baseName + extName);
+			} else if (options.widthAsDir) {
 				dirName = dirName + '/' + width + '/';
 				checkDirectoryExists(path.join(dirName));
 				return path.join(dirName, baseName + extName);
@@ -246,12 +250,20 @@ module.exports = function(grunt) {
 			var image_optim,
 				deferred = q.defer(),
 				errorMessage = 'image_optim exited with a failure status',
-				ymlPath = path.resolve(__dirname, 'lib/i_o.yml');
+				ymlPath = path.resolve(__dirname, 'lib/i_o.yml'),
+				exts = ['.gif', '.jpeg', '.jpg', '.png', '.svg'];
+
+			for (var i = 0; i < files.length; i++) {
+				if (exts.indexOf(path.extname(files[i]).toLowerCase()) === -1) {
+					files.splice(i, 1);
+					i--;
+				}
+			}
 
 			image_optim = cpSpawn(binPath, ['--config-paths', ymlPath].concat(files), {});
 
 			image_optim.stdout.on('data', function(message) {
-				grunt.verbose.ok(String(message || '').replace(/\n+$/, ''));
+				grunt.verbose.ok(String(message.toString('utf8') || '').replace(/\n+$/, ''));
 			});
 
 			image_optim.stderr.on('data', function(data) {
@@ -391,6 +403,10 @@ module.exports = function(grunt) {
 			if (extName === '.svg') {
 				deferred = resizeSVG(deferred, srcPath, dstPath, width);
 
+			// if it’s a PDF, generate a PNG using ImageMagick
+			} else if (extName === '.pdf') {
+				deferred = resizePDF(deferred, srcPath, dstPath, options, width);
+
 			// all other images get loaded into ImageMagick
 			} else {
 				deferred = resizeRaster(deferred, srcPath, dstPath, extName, options, width);
@@ -398,6 +414,55 @@ module.exports = function(grunt) {
 			}
 
 			return deferred.promise;
+		},
+
+
+		/**
+		 * Resize a PDF
+		 *
+		 * @private
+		 * @param   {Object}          deferred  The deferred promise
+		 * @param   {string}          srcPath   The source path
+		 * @param   {string}          dstPath   The destination path
+		 * @param   {Object}          options   Options
+		 * @param   {int}             width     Width
+		 */
+		resizePDF = function(deferred, srcPath, dstPath, options, width) {
+
+			// make the destination file a PNG
+			dstPath = dstPath.replace(/\.pdf$/i, '.png');
+
+			// get properties about the image
+			im.identify(srcPath, function(error, data) {
+
+				// figure out 2x density
+				var pdfWidth = data.width,
+					pdfResolution = parseInt(new String(data.resolution).split('x')[0], 10),
+					density = width / pdfWidth * pdfResolution * 2;
+
+				// render
+				var args = [
+					'-density',
+					density,
+					srcPath + '[0]',
+					dstPath
+				];
+
+				im.convert(args, function(err, stdout, stderr) {
+					// bail if there’s an error
+					if (err) {
+						grunt.fail.warn(err);
+						return deferred.reject(err);
+					}
+
+					// resize to final width using standard IM stuff
+					return resizeRaster(deferred, dstPath, dstPath, '.png', options, width);
+				});
+
+			});
+
+			return deferred;
+
 		},
 
 
@@ -1374,6 +1439,30 @@ module.exports = function(grunt) {
 
 			},
 
+			// copy SVGs and PDFs
+			function(callback) {
+				async.each(task.files, function(file, callback2) {
+					var srcPath = file.src[0],
+						extName = path.extname(srcPath).toLowerCase();
+
+					// if it’s an SVG or a PDF, copy the file to the output dir
+					if (extName === '.svg' || extName === '.pdf') {
+						var dstPath = getDestination(srcPath, file.dest, false, options);
+						fs.copy(srcPath, dstPath, function(err){
+							if (err) {
+								grunt.fail.fatal(err);
+							}
+
+							outputFiles.push(dstPath);
+							callback2(null);
+						});
+					} else {
+						callback2(null);
+					}
+
+				}, callback);
+			},
+
 			// resize images
 			function(callback) {
 
@@ -1398,10 +1487,13 @@ module.exports = function(grunt) {
 						promise2.done(function(results) {
 
 							if (results) {
-								// if it’s an SVG, make sure we record that the output was a PNG
-								var extName = path.extname(dstPath).toLowerCase();
-								if (extName === '.svg') {
+
+								var extName = path.extname(srcPath).toLowerCase();
+
+								// if it’s an SVG or a PDF, make sure we record that the output was a PNG
+								if (extName === '.svg' || extName === '.pdf') {
 									dstPath = dstPath.replace(/\.svg$/i, '.png');
+									dstPath = dstPath.replace(/\.pdf$/i, '.png');
 									extName = '.png';
 								}
 

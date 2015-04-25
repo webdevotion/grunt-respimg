@@ -128,42 +128,72 @@
 					});
 				},
 
-				// pdf-w320.png
+				// icon-w320.png
 				function(callback) {
-					assetExpected = fs.readFileSync('test/expected/default/svg/pdf-w320.png');
-					assetGenerated = fs.readFileSync('test/generated/default/svg/pdf-w320.png');
+					assetExpected = fs.readFileSync('test/expected/default/svg/icon-w320.png');
+					assetGenerated = fs.readFileSync('test/generated/default/svg/icon-w320.png');
 					diff = resemble(assetExpected).compareTo(assetGenerated).onComplete(function(data) {
-						test.ok(compareImages(data, assetExpected, assetGenerated), 'pdf-w320.png: images don’t match');
+						test.ok(compareImages(data, assetExpected, assetGenerated), 'icon-w320.png: images don’t match');
 						callback();
 					});
 				},
 
-				// pdf-w640.png
+				// icon-w640.png
 				function(callback) {
-					assetExpected = fs.readFileSync('test/expected/default/svg/pdf-w640.png');
-					assetGenerated = fs.readFileSync('test/generated/default/svg/pdf-w640.png');
+					assetExpected = fs.readFileSync('test/expected/default/svg/icon-w640.png');
+					assetGenerated = fs.readFileSync('test/generated/default/svg/icon-w640.png');
 					diff = resemble(assetExpected).compareTo(assetGenerated).onComplete(function(data) {
-						test.ok(compareImages(data, assetExpected, assetGenerated), 'pdf-w640.png: images don’t match');
+						test.ok(compareImages(data, assetExpected, assetGenerated), 'icon-w640.png: images don’t match');
 						callback();
 					});
 				},
 
-				// pdf-w1280.png
+				// icon-w1280.png
 				function(callback) {
-					assetExpected = fs.readFileSync('test/expected/default/svg/pdf-w1280.png');
-					assetGenerated = fs.readFileSync('test/generated/default/svg/pdf-w1280.png');
+					assetExpected = fs.readFileSync('test/expected/default/svg/icon-w1280.png');
+					assetGenerated = fs.readFileSync('test/generated/default/svg/icon-w1280.png');
 					diff = resemble(assetExpected).compareTo(assetGenerated).onComplete(function(data) {
-						test.ok(compareImages(data, assetExpected, assetGenerated), 'pdf-w1280.png: images don’t match');
+						test.ok(compareImages(data, assetExpected, assetGenerated), 'icon-w1280.png: images don’t match');
 						callback();
 					});
 				},
 
-				// pdf.svg
+				// icon.svg
 				function(callback) {
-					assetExpected = fs.readFileSync('test/expected/default/svg/pdf.svg', 'utf-8');
-					assetGenerated = fs.readFileSync('test/generated/default/svg/pdf.svg', 'utf-8');
-					test.ok(assetExpected === assetGenerated, 'pdf.svg: images don’t match');
+					assetExpected = fs.readFileSync('test/expected/default/svg/icon.svg', 'utf-8');
+					assetGenerated = fs.readFileSync('test/generated/default/svg/icon.svg', 'utf-8');
+					test.ok(assetExpected === assetGenerated, 'icon.svg: images don’t match');
 					callback();
+				},
+
+				// 1748-5908-8-108-w320.png
+				function(callback) {
+					assetExpected = fs.readFileSync('test/expected/default/pdf/1748-5908-8-108-w320.png');
+					assetGenerated = fs.readFileSync('test/generated/default/pdf/1748-5908-8-108-w320.png');
+					diff = resemble(assetExpected).compareTo(assetGenerated).onComplete(function(data) {
+						test.ok(compareImages(data, assetExpected, assetGenerated), '1748-5908-8-108-w320.png: images don’t match');
+						callback();
+					});
+				},
+
+				// 1748-5908-8-108-w640.png
+				function(callback) {
+					assetExpected = fs.readFileSync('test/expected/default/pdf/1748-5908-8-108-w640.png');
+					assetGenerated = fs.readFileSync('test/generated/default/pdf/1748-5908-8-108-w640.png');
+					diff = resemble(assetExpected).compareTo(assetGenerated).onComplete(function(data) {
+						test.ok(compareImages(data, assetExpected, assetGenerated), '1748-5908-8-108-w640.png: images don’t match');
+						callback();
+					});
+				},
+
+				// 1748-5908-8-108-w1280.png
+				function(callback) {
+					assetExpected = fs.readFileSync('test/expected/default/pdf/1748-5908-8-108-w1280.png');
+					assetGenerated = fs.readFileSync('test/generated/default/pdf/1748-5908-8-108-w1280.png');
+					diff = resemble(assetExpected).compareTo(assetGenerated).onComplete(function(data) {
+						test.ok(compareImages(data, assetExpected, assetGenerated), '1748-5908-8-108-w1280.png: images don’t match');
+						callback();
+					});
 				},
 			],
 
@@ -239,42 +269,72 @@
 					});
 				},
 
-				// 320/pdf.png
+				// 320/icon.png
 				function(callback) {
-					assetExpected = fs.readFileSync('test/expected/widthAsDir/svg/320/pdf.png');
-					assetGenerated = fs.readFileSync('test/generated/widthAsDir/svg/320/pdf.png');
+					assetExpected = fs.readFileSync('test/expected/widthAsDir/svg/320/icon.png');
+					assetGenerated = fs.readFileSync('test/generated/widthAsDir/svg/320/icon.png');
 					diff = resemble(assetExpected).compareTo(assetGenerated).onComplete(function(data) {
-						test.ok(compareImages(data, assetExpected, assetGenerated), '320/pdf.png: images don’t match');
+						test.ok(compareImages(data, assetExpected, assetGenerated), '320/icon.png: images don’t match');
 						callback();
 					});
 				},
 
-				// 640/pdf.png
+				// 640/icon.png
 				function(callback) {
-					assetExpected = fs.readFileSync('test/expected/widthAsDir/svg/640/pdf.png');
-					assetGenerated = fs.readFileSync('test/generated/widthAsDir/svg/640/pdf.png');
+					assetExpected = fs.readFileSync('test/expected/widthAsDir/svg/640/icon.png');
+					assetGenerated = fs.readFileSync('test/generated/widthAsDir/svg/640/icon.png');
 					diff = resemble(assetExpected).compareTo(assetGenerated).onComplete(function(data) {
-						test.ok(compareImages(data, assetExpected, assetGenerated), '640/pdf.png: images don’t match');
+						test.ok(compareImages(data, assetExpected, assetGenerated), '640/icon.png: images don’t match');
 						callback();
 					});
 				},
 
-				// 1280/pdf.png
+				// 1280/icon.png
 				function(callback) {
-					assetExpected = fs.readFileSync('test/expected/widthAsDir/svg/1280/pdf.png');
-					assetGenerated = fs.readFileSync('test/generated/widthAsDir/svg/1280/pdf.png');
+					assetExpected = fs.readFileSync('test/expected/widthAsDir/svg/1280/icon.png');
+					assetGenerated = fs.readFileSync('test/generated/widthAsDir/svg/1280/icon.png');
 					diff = resemble(assetExpected).compareTo(assetGenerated).onComplete(function(data) {
-						test.ok(compareImages(data, assetExpected, assetGenerated), '1280/pdf.png: images don’t match');
+						test.ok(compareImages(data, assetExpected, assetGenerated), '1280/icon.png: images don’t match');
 						callback();
 					});
 				},
 
-				// pdf.svg
+				// icon.svg
 				function(callback) {
-					assetExpected = fs.readFileSync('test/expected/widthAsDir/svg/pdf.svg', 'utf-8');
-					assetGenerated = fs.readFileSync('test/generated/widthAsDir/svg/pdf.svg', 'utf-8');
-					test.ok(assetExpected === assetGenerated, 'pdf.svg: images don’t match');
+					assetExpected = fs.readFileSync('test/expected/widthAsDir/svg/icon.svg', 'utf-8');
+					assetGenerated = fs.readFileSync('test/generated/widthAsDir/svg/icon.svg', 'utf-8');
+					test.ok(assetExpected === assetGenerated, 'icon.svg: images don’t match');
 					callback();
+				},
+
+				// 320/1748-5908-8-108.png
+				function(callback) {
+					assetExpected = fs.readFileSync('test/expected/widthAsDir/pdf/320/1748-5908-8-108.png');
+					assetGenerated = fs.readFileSync('test/generated/widthAsDir/pdf/320/1748-5908-8-108.png');
+					diff = resemble(assetExpected).compareTo(assetGenerated).onComplete(function(data) {
+						test.ok(compareImages(data, assetExpected, assetGenerated), '320/1748-5908-8-108.png: images don’t match');
+						callback();
+					});
+				},
+
+				// 640/1748-5908-8-108.png
+				function(callback) {
+					assetExpected = fs.readFileSync('test/expected/widthAsDir/pdf/640/1748-5908-8-108.png');
+					assetGenerated = fs.readFileSync('test/generated/widthAsDir/pdf/640/1748-5908-8-108.png');
+					diff = resemble(assetExpected).compareTo(assetGenerated).onComplete(function(data) {
+						test.ok(compareImages(data, assetExpected, assetGenerated), '640/1748-5908-8-108.png: images don’t match');
+						callback();
+					});
+				},
+
+				// 1280/1748-5908-8-108.png
+				function(callback) {
+					assetExpected = fs.readFileSync('test/expected/widthAsDir/pdf/1280/1748-5908-8-108.png');
+					assetGenerated = fs.readFileSync('test/generated/widthAsDir/pdf/1280/1748-5908-8-108.png');
+					diff = resemble(assetExpected).compareTo(assetGenerated).onComplete(function(data) {
+						test.ok(compareImages(data, assetExpected, assetGenerated), '1280/1748-5908-8-108.png: images don’t match');
+						callback();
+					});
 				},
 			],
 
