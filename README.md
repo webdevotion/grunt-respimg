@@ -89,7 +89,7 @@ sudo gem install image_optim image_optim_pack
 Using `pip` (a Python package manager), install picopt:
 
 ```shell
-pip install picopt
+pip install picopt --user
 ```
 
 If you’re on a Mac, the Cairo install may be a bit wonky, so you may need to do this:
